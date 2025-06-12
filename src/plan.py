@@ -16,7 +16,7 @@ def get_sonarqube_config(client_version, root_dir, edition, files):
         return config
 
 
-def get_cloud_config(root_dir):
+def get_cloud_config(root_dir, **kwargs):
     cloud_file = os.path.join(root_dir, 'cloud.json')
     config = None
     if os.path.exists(cloud_file):
@@ -25,14 +25,14 @@ def get_cloud_config(root_dir):
     return config
 
 
-def get_available_task_configs(client_version, edition):
+def get_available_task_configs(client_version, edition, unused=None, **kwargs):
     available_tasks = dict()
     for root, dirs, files in os.walk(TASK_DIR):
         task = root.split('/')[-1]
         if client_version != 'cloud':
             config = get_sonarqube_config(client_version=client_version, edition=edition, root_dir=root, files=files)
         else:
-            config = get_cloud_config(root_dir=root)
+            config = get_cloud_config(root_dir=root, other=True)
         if config is not None:
             available_tasks[task] = config
     return available_tasks

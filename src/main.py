@@ -53,7 +53,7 @@ def extract(url, token, export_directory: str, extract_type, pem_file_path, key_
     configure_logger(name='http_request', level='INFO', output_file=os.path.join(extract_directory, 'requests.log'))
     configure_client(url=url, cert=cert, server_version=server_version, token=token, concurrency=concurrency,
                      timeout=timeout)
-    configs = get_available_task_configs(client_version=server_version, edition=edition)
+    configs = get_available_task_configs(client_version=server_version, edition=edition, unused=True)
     if target_task is not None:
         target_tasks = [target_task]
     elif extract_type == 'all':
@@ -169,7 +169,7 @@ def migrate(token, edition, url, enterprise_key, concurrency, run_id, export_dir
     configure_client(url=url, cert=None, server_version="cloud", token=token)
     api_url = url.replace('https://', 'https://api.')
     configure_client(url=api_url, cert=None, server_version="cloud", token=token)
-    configs = get_available_task_configs(client_version='cloud', edition=edition)
+    configs = get_available_task_configs(client_version='cloud', edition=edition, unused=False)
     if run_id is None:
         run_id = str(int(datetime.now(UTC).timestamp()))
         create_plan = True
@@ -226,7 +226,7 @@ def reset(token, edition, url, enterprise_key, concurrency, export_directory):
 
     """
 
-    configs = get_available_task_configs(client_version='cloud', edition=edition)
+    configs = get_available_task_configs(client_version='cloud', edition=edition, unused=False, other=False)
     if not url.endswith('/'):
         url = f"{url}/"
     configure_client(url=url, cert=None, server_version="cloud", token=token)
