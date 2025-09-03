@@ -11,5 +11,4 @@ RUN pip install -r /app/requirements.txt
 COPY /src/ /app/
 
 WORKDIR /app
-ENTRYPOINT ["python", "/app/main.py"]
 LABEL org.opencontainers.image.source=https://github.com/sonar-solutions/sonar-reports
