@@ -7,7 +7,7 @@
   ],
   "dependencies": [
     {
-      "key": "getProjects",
+      "key": "getProjectComponents",
       "strategy": "each"
     }
   ],
@@ -23,7 +23,7 @@
         },
         "url": {
           "value": {
-            "raw": "/api/project_analyses/search"
+            "raw": "/api/hotspots/search"
           },
           "operations": []
         },
@@ -47,25 +47,25 @@
         },
         "pageLimit": {
           "value": {
-            "raw": 500
+            "raw": 20
           },
           "operations": []
         },
         "resultKey": {
           "value": {
-            "raw": "analyses"
+            "raw": "$.hotspots"
           },
           "operations": []
         },
         "maxPageSize": {
           "value": {
-            "raw": 100
+            "raw": 500
           },
           "operations": []
         },
         "totalKey": {
           "value": {
-            "raw": null
+            "raw": "$.paging.total"
           },
           "operations": []
         },
@@ -74,12 +74,37 @@
             "map": {
               "project": {
                 "value": {
-                  "source": "getProjects",
-                  "path": "$.key"
+                  "source": "getProjectComponents",
+                  "path": "$.projectKey"
+                },
+                "operations": []
+              },
+              "files": {
+                "value": {
+                  "source": "getProjectComponents",
+                  "path": "$.path"
                 },
                 "operations": []
               }
             }
+          },
+          "operations": []
+        }
+      }
+    },
+    {
+      "operation": "set_key",
+      "kwargs": {
+        "key": {
+          "value": {
+            "raw": "projectComponentKey"
+          },
+          "operations": []
+        },
+        "val": {
+          "value": {
+            "source": "getProjectComponents",
+            "path": "$.key"
           },
           "operations": []
         }
@@ -96,8 +121,8 @@
         },
         "val": {
           "value": {
-            "source": "getProjects",
-            "path": "$.key"
+            "source": "getProjectComponents",
+            "path": "$.projectKey"
           },
           "operations": []
         }

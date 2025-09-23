@@ -7,7 +7,7 @@
   ],
   "dependencies": [
     {
-      "key": "getProjects",
+      "key": "getProjectComponents",
       "strategy": "each"
     }
   ],
@@ -23,7 +23,7 @@
         },
         "url": {
           "value": {
-            "raw": "/api/project_analyses/search"
+            "raw": "/api/duplications/show"
           },
           "operations": []
         },
@@ -35,31 +35,31 @@
         },
         "paginationKey": {
           "value": {
-            "raw": "p"
+            "raw": null
           },
           "operations": []
         },
         "pageSizeKey": {
           "value": {
-            "raw": "ps"
+            "raw": null
           },
           "operations": []
         },
         "pageLimit": {
           "value": {
-            "raw": 500
+            "raw": null
           },
           "operations": []
         },
         "resultKey": {
           "value": {
-            "raw": "analyses"
+            "raw": null
           },
           "operations": []
         },
         "maxPageSize": {
           "value": {
-            "raw": 100
+            "raw": null
           },
           "operations": []
         },
@@ -72,14 +72,32 @@
         "params": {
           "value": {
             "map": {
-              "project": {
+              "key": {
                 "value": {
-                  "source": "getProjects",
+                  "source": "getProjectComponents",
                   "path": "$.key"
                 },
                 "operations": []
               }
             }
+          },
+          "operations": []
+        }
+      }
+    },
+    {
+      "operation": "set_key",
+      "kwargs": {
+        "key": {
+          "value": {
+            "raw": "projectComponentKey"
+          },
+          "operations": []
+        },
+        "val": {
+          "value": {
+            "source": "getProjectComponents",
+            "path": "$.key"
           },
           "operations": []
         }
@@ -96,8 +114,8 @@
         },
         "val": {
           "value": {
-            "source": "getProjects",
-            "path": "$.key"
+            "source": "getProjectComponents",
+            "path": "$.projectKey"
           },
           "operations": []
         }

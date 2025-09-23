@@ -7,7 +7,7 @@ local.env
 
 # C extensions
 *.so
-
+.scannerwork/*
 # Distribution / packaging
 .Python
 env/
