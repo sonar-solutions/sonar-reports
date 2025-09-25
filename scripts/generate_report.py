@@ -529,10 +529,11 @@ def extract_component_changesets(extract_directory, mapping, components):
                 revisions[line[3]] = dict(
                     revision=line[3],
                     author=line[1],
-                    date=datetime.fromisoformat(line[2])
+                    date=int(datetime.fromisoformat(line[2]).timestamp()*1000)
                 )
             lines.append(list(revisions.keys()).index(line[3]))
-
+        change['changeset'] = list(revisions.values())
+        change['changesetIndexByLine'] = lines
         with open(os.path.join(extract_directory, 'history/', component['projectKey'], f'changesets-{ref_id}.pb'),
                   'wb') as f:
             json_format.Parse(json.dumps(change), changeset)
