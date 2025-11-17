@@ -268,8 +268,103 @@ def reset(token, edition, url, enterprise_key, concurrency, export_directory):
 @click.option('--url', default='https://sonarcloud.io/', help="Url of the SonarQube Cloud")
 @click.option('--concurrency', default=25, help="Maximum number of concurrent requests")
 @click.option('--export_directory', default='/app/files/', help="Directory to place all interim files")
-def history(token, edition, url, enterprise_key, concurrency, export_directory, latest_scan=True):
-    pass
+@click.option('--latest_only', default=True, is_flag=True, help="Only process latest scan for each project")
+def history(token, edition, url, enterprise_key, concurrency, export_directory, latest_only):
+    """Migrate latest scan data for migrated projects to SonarQube Cloud.
+    
+    Generates scan data using real source code, issues, and measures from extracted data,
+    then uploads to SonarQube Cloud.
+    
+    TOKEN is a user token that has admin permissions at the enterprise level and all organizations
+    ENTERPRISE_KEY is the key of the SonarQube Cloud enterprise
+    """
+    if not url.endswith('/'):
+        url = f"{url}/"
+    
+    # Load migration and extract mappings
+    migration_mapping = get_unique_extracts(directory=export_directory, key='migrate.json')
+    extract_mapping = get_unique_extracts(directory=export_directory)
+    
+    if not migration_mapping:
+        click.echo("No migration data found. Please run 'migrate' command first.")
+        return
+    
+    if not extract_mapping:
+        click.echo("No extract data found. Please run 'extract' command first.")
+        return
+    
+    # Get migrated projects
+    from history.projects import get_new_projects
+    from history.generate_latest import generate_latest_scan
+    from history.upload import upload_scan
+    
+    projects = get_new_projects(export_directory, migration_mapping)
+    
+    if not projects:
+        click.echo("No migrated projects found.")
+        return
+    
+    # Create output directory for scans
+    run_id = str(int(datetime.now(UTC).timestamp()))
+    output_dir = os.path.join(export_directory, run_id)
+    os.makedirs(output_dir, exist_ok=True)
+    
+    # Configure logging
+    configure_logger(name='http_request', level='INFO', output_file=os.path.join(output_dir, 'requests.log'))
+    
+    # Process each project
+    loop = asyncio.get_event_loop()
+    results = []
+    
+    for source_project_key, project in projects.items():
+        try:
+            click.echo(f"Processing project: {project['key']} (source: {source_project_key})")
+            
+            # Generate latest scan
+            scan_dir = generate_latest_scan(
+                extract_directory=export_directory,
+                extract_mapping=extract_mapping,
+                migration_mapping=migration_mapping,
+                project_key=source_project_key,
+                output_dir=output_dir
+            )
+            
+            # Upload scan
+            organization = project['sonarCloudOrgKey']
+            resp = loop.run_until_complete(
+                upload_scan(
+                    scan_dir=scan_dir,
+                    project_key=project['key'],
+                    organization=organization,
+                    token=token,
+                    base_url=url,
+                    timeout=300
+                )
+            )
+            
+            results.append({
+                'project_key': project['key'],
+                'source_project_key': source_project_key,
+                'status': 'success',
+                'scan_dir': scan_dir
+            })
+            click.echo(f"Successfully uploaded scan for {project['key']}")
+            
+        except Exception as e:
+            click.echo(f"Error processing {project.get('key', source_project_key)}: {str(e)}", err=True)
+            results.append({
+                'project_key': project.get('key', 'unknown'),
+                'source_project_key': source_project_key,
+                'status': 'error',
+                'error': str(e)
+            })
+    
+    # Summary
+    successful = sum(1 for r in results if r['status'] == 'success')
+    failed = len(results) - successful
+    click.echo(f"\nSummary: {successful} successful, {failed} failed")
+    
+    return results
 
 
 
