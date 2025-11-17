@@ -332,15 +332,15 @@ def generate_project_files(output_dir, file_count, languages, lines, rules):
 def generate_issues(output_dir, severities, bugs, code_smells, vulnerabilities, hotspots, quality_counts, files, rules):
     distribution = dict(
         bug=dict(
-            per_file=bugs,
+            per_file=bugs // len(files),
             remainder=bugs % len(files)
         ),
         code_smell=dict(
-            per_file=code_smells,
+            per_file=code_smells// len(files),
             remainder=code_smells % len(files)
         ),
         vulnerability=dict(
-            per_file=vulnerabilities,
+            per_file=vulnerabilities// len(files),
             remainder=vulnerabilities % len(files)
         ),
         security_hotspot=dict(
@@ -348,8 +348,11 @@ def generate_issues(output_dir, severities, bugs, code_smells, vulnerabilities, 
             remainder=hotspots % len(files)
         )
     )
+    print(distribution)
     for idx, file in enumerate(files):
         for issue_type, counts in distribution.items():
+            if issue_type == 'security_hotspot':
+                continue
             total = counts['per_file'] + counts['remainder'] if idx == 0 else counts['per_file']
             for issue_idx in range(int(total)):
                 issue = {
@@ -386,7 +389,7 @@ def generate_issues(output_dir, severities, bugs, code_smells, vulnerabilities, 
                     issue['severity'] = SEVERITY_MAPPING[severity.replace('_violations', '').upper()]
                     severities[severity] -= 1
                     break
-                if issue_type != "SECURITY_HOTSPOT":
+                if issue_type != "security_hotspot":
                     for quality in sorted(quality_counts.keys()):
                         for severity in sorted(quality_counts[quality].keys()):
                             if quality_counts[quality][severity] == 0 or severity == 'total':
@@ -402,7 +405,7 @@ def generate_issues(output_dir, severities, bugs, code_smells, vulnerabilities, 
                     proto_class=Issue,
                     payload=issue,
                 )
-            break
+
 
 
 def generate_coverage(output_dir, lines_to_cover, covered_lines, conditions, covered_conditions, files):

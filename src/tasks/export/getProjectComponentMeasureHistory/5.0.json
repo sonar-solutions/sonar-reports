@@ -153,6 +153,24 @@
       "kwargs": {
         "key": {
           "value": {
+            "raw": "componentType"
+          },
+          "operations": []
+        },
+        "val": {
+          "value": {
+            "source": "getProjectComponents",
+            "path": "$.qualifier"
+          },
+          "operations": []
+        }
+      }
+    },
+    {
+      "operation": "set_key",
+      "kwargs": {
+        "key": {
+          "value": {
             "raw": "serverUrl"
           },
           "operations": []

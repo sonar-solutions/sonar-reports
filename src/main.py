@@ -180,13 +180,14 @@ def migrate(token, edition, url, enterprise_key, concurrency, run_id, export_dir
         target_tasks = [target_task]
     else:
         target_tasks = list(
-            [k for k in configs.keys() if not any([k.startswith(i) for i in ['get', 'delete', 'reset']])])
+            [k for k in configs.keys() if not any([k.startswith(i) for i in ['get', 'delete', 'reset']]) ])
     completed = completed.union(MIGRATION_TASKS)
+    plan = None
     if create_plan:
         plan = generate_task_plan(
             target_tasks=target_tasks,
             task_configs=configs, completed=completed)
-        with open(os.path.join(run_dir, 'plan.json'), 'wt') as f:
+        with open(os.path.join(run_dir, 'migrate.json'), 'wt') as f:
             json.dump(
                 dict(
                     plan=plan,
@@ -200,7 +201,7 @@ def migrate(token, edition, url, enterprise_key, concurrency, run_id, export_dir
                 ), f
             )
     else:
-        with open(os.path.join(run_dir, 'plan.json'), 'rt') as f:
+        with open(os.path.join(run_dir, 'migrate.json'), 'rt') as f:
             plan = json.load(f)['plan']
     plan = filter_completed(plan=plan, directory=run_dir)
     execute_plan(execution_plan=plan, inputs=dict(url=url, api_url=api_url, enterprise_key=enterprise_key),
@@ -259,6 +260,18 @@ def reset(token, edition, url, enterprise_key, concurrency, export_directory):
                  task_configs=configs,
                  output_directory=export_directory, current_run_id=run_id,
                  run_ids={run_id})
+
+@cli.command()
+@click.argument('token')
+@click.argument('enterprise_key')
+@click.option('--edition', default='enterprise', help="SonarQube Cloud License Edition")
+@click.option('--url', default='https://sonarcloud.io/', help="Url of the SonarQube Cloud")
+@click.option('--concurrency', default=25, help="Maximum number of concurrent requests")
+@click.option('--export_directory', default='/app/files/', help="Directory to place all interim files")
+def history(token, edition, url, enterprise_key, concurrency, export_directory, latest_scan=True):
+    pass
+
+
 
 
 @cli.command()

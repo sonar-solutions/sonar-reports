@@ -30,19 +30,19 @@
         },
         "paginationKey": {
           "value": {
-            "raw": null
+            "raw": "p"
           },
           "operations": []
         },
         "pageSizeKey": {
           "value": {
-            "raw": null
+            "raw": "ps"
           },
           "operations": []
         },
         "pageLimit": {
           "value": {
-            "raw": null
+            "raw": 10
           },
           "operations": []
         },
@@ -54,13 +54,13 @@
         },
         "maxPageSize": {
           "value": {
-            "raw": null
+            "raw": 500
           },
           "operations": []
         },
         "totalKey": {
           "value": {
-            "raw": null
+            "raw": "$.total"
           },
           "operations": []
         },

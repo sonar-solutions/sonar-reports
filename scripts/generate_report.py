@@ -1,3 +1,4 @@
+"""Working version that recreates the existing analysis protobuf files"""
 import json
 import os
 import uuid
