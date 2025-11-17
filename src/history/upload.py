@@ -5,13 +5,14 @@ import zipfile
 import httpx
 
 
-async def upload_scan(scan_dir, project_key, organization, token, base_url, timeout=300):
+async def upload_scan(scan_dir, project_key, project_name, organization, token, base_url, timeout=300):
     """
     Upload a scan directory to SonarQube Cloud via /api/ce/submit endpoint.
     
     Args:
         scan_dir: Path to the scan directory containing protobuf files
         project_key: Project key in SonarQube Cloud
+        project_name: Project name in SonarQube Cloud
         organization: Organization key in SonarQube Cloud
         token: Authentication token
         base_url: Base URL of SonarQube Cloud instance
@@ -45,7 +46,7 @@ async def upload_scan(scan_dir, project_key, organization, token, base_url, time
                     params={"organization": organization},
                     data={
                         "projectKey": project_key,
-                        "projectName": project_key,
+                        "projectName": project_name,
                     },
                     files={"report": ("scanner-report.zip", f, "application/zip")},
                     timeout=timeout,

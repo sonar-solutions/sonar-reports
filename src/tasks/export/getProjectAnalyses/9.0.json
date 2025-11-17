@@ -65,7 +65,7 @@
         },
         "totalKey": {
           "value": {
-            "raw": null
+            "raw": "$.paging.total"
           },
           "operations": []
         },

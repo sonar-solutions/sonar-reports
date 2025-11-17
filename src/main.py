@@ -295,8 +295,7 @@ def history(token, edition, url, enterprise_key, concurrency, export_directory, 
     
     # Get migrated projects
     from history.projects import get_new_projects
-    from history.generate_latest import generate_latest_scan
-    from history.upload import upload_scan
+    from history.process import process_project
     
     projects = get_new_projects(export_directory, migration_mapping)
     
@@ -312,52 +311,20 @@ def history(token, edition, url, enterprise_key, concurrency, export_directory, 
     # Configure logging
     configure_logger(name='http_request', level='INFO', output_file=os.path.join(output_dir, 'requests.log'))
     
-    # Process each project
-    loop = asyncio.get_event_loop()
-    results = []
+    # Create semaphore to limit concurrent operations
+    semaphore = asyncio.Semaphore(concurrency)
     
-    for source_project_key, project in projects.items():
-        try:
-            click.echo(f"Processing project: {project['key']} (source: {source_project_key})")
-            
-            # Generate latest scan
-            scan_dir = generate_latest_scan(
-                extract_directory=export_directory,
-                extract_mapping=extract_mapping,
-                migration_mapping=migration_mapping,
-                project_key=source_project_key,
-                output_dir=output_dir
-            )
-            
-            # Upload scan
-            organization = project['sonarCloudOrgKey']
-            resp = loop.run_until_complete(
-                upload_scan(
-                    scan_dir=scan_dir,
-                    project_key=project['key'],
-                    organization=organization,
-                    token=token,
-                    base_url=url,
-                    timeout=300
-                )
-            )
-            
-            results.append({
-                'project_key': project['key'],
-                'source_project_key': source_project_key,
-                'status': 'success',
-                'scan_dir': scan_dir
-            })
-            click.echo(f"Successfully uploaded scan for {project['key']}")
-            
-        except Exception as e:
-            click.echo(f"Error processing {project.get('key', source_project_key)}: {str(e)}", err=True)
-            results.append({
-                'project_key': project.get('key', 'unknown'),
-                'source_project_key': source_project_key,
-                'status': 'error',
-                'error': str(e)
-            })
+    # Process all projects concurrently
+    loop = asyncio.get_event_loop()
+    tasks = [
+        process_project(
+            source_project_key, project, semaphore,
+            export_directory, extract_mapping, migration_mapping,
+            output_dir, token, url
+        )
+        for source_project_key, project in projects.items()
+    ]
+    results = loop.run_until_complete(asyncio.gather(*tasks))
     
     # Summary
     successful = sum(1 for r in results if r['status'] == 'success')
