@@ -112,3 +112,6 @@ ENV/
 
 # SonarQube Exports
 sonarqube-export/
+
+# Project notes (internal documentation)
+project-notes/
