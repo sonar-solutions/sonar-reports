@@ -383,7 +383,7 @@ docker run -v ./files:/app/files ghcr.io/sonar-solutions/sonar-reports:latest \
 
 | Argument | Description |
 |----------|-------------|
-| `SECRETS_FILE` | Path to JSON file containing org-key to DevOps-token mappings (relative to <br>`--input_directory`) |
+| `SECRETS_FILE` | Path to JSON file containing org-key to DevOps-token mappings (relative to `--input_directory`) |
 | `SONAR_TOKEN` | SonarQube Cloud token to set as organization secret |
 | `SONAR_URL` | SonarQube Cloud URL to set as organization secret |
 
@@ -391,8 +391,8 @@ docker run -v ./files:/app/files ghcr.io/sonar-solutions/sonar-reports:latest \
 
 | Option | Description | Default |
 |--------|-------------|---------|
-| <nobr>`--input_directory`</nobr> | Directory containing migration files (must include `generateOrganizationMappings` task output) | `/app/files/` |
-| <nobr>`--output_directory`</nobr> | Directory to place pipeline update output files | Same as <nobr>`--input_directory`</nobr> |
+| `--input_directory` | Directory containing migration files (must<br> include `generateOrganizationMappings` task output) | `/app/files/` |
+| `--output_directory` | Directory to place pipeline update output files | Same as<br> `--input_directory` |
 
 #### What It Does
 
@@ -433,9 +433,9 @@ docker run -v ./files:/app/files ghcr.io/sonar-solutions/sonar-reports:latest \
 
 | Option | Description | Default |
 |--------|-------------|---------|
-| <nobr>`--export_directory`</nobr> | Directory containing extracted data | `/app/files/` |
-| `--report_type` | Type of report to generate (`migration` or `maturity`) | `migration` |
-| `--filename` | Custom filename for the generated report (without extension) | Same as <nobr>`--report_type`</nobr> |
+| `--export_directory` | Directory containing extracted data | `/app/files/` |
+| `--report_type` | Type of report to generate<br> (`migration` or `maturity`) | `migration` |
+| `--filename` | Custom filename for the generated<br> report (without extension) | Same as `--report_type` |
 
 Report types include migration readiness and maturity assessments.
 
