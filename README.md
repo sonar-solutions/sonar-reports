@@ -383,7 +383,7 @@ docker run -v ./files:/app/files ghcr.io/sonar-solutions/sonar-reports:latest \
 
 | Argument | Description |
 |----------|-------------|
-| `SECRETS_FILE` | Path to JSON file containing org-key to DevOps-token mappings (relative to `--input_directory`) |
+| `SECRETS_FILE` | Path to JSON file containing org-key to DevOps-token mappings (relative to `&#8209;&#8209;input_directory`) |
 | `SONAR_TOKEN` | SonarQube Cloud token to set as organization secret |
 | `SONAR_URL` | SonarQube Cloud URL to set as organization secret |
 
@@ -391,8 +391,8 @@ docker run -v ./files:/app/files ghcr.io/sonar-solutions/sonar-reports:latest \
 
 | Option | Description | Default |
 |--------|-------------|---------|
-| `--input_directory` | Directory containing migration files (must include `generateOrganizationMappings` task output) | `/app/files/` |
-| `--output_directory` | Directory to place pipeline update output files | Same as `--input_directory` |
+| `&#8209;&#8209;input_directory` | Directory containing migration files (must include `generateOrganizationMappings` task output) | `/app/files/` |
+| `&#8209;&#8209;output_directory` | Directory to place pipeline update output files | Same as `&#8209;&#8209;input_directory` |
 
 #### What It Does
 
@@ -433,9 +433,9 @@ docker run -v ./files:/app/files ghcr.io/sonar-solutions/sonar-reports:latest \
 
 | Option | Description | Default |
 |--------|-------------|---------|
-| `--export_directory` | Directory containing extracted data | `/app/files/` |
+| `&#8209;&#8209;export_directory` | Directory containing extracted data | `/app/files/` |
 | `--report_type` | Type of report to generate (`migration` or `maturity`) | `migration` |
-| `--filename` | Custom filename for the generated report (without extension) | Same as `--report_type` |
+| `--filename` | Custom filename for the generated report (without extension) | Same as `&#8209;&#8209;report_type` |
 
 Report types include migration readiness and maturity assessments.
 
