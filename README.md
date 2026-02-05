@@ -2,6 +2,8 @@
 
 This guide explains how to use the automated migration script to migrate your SonarQube Server projects to SonarCloud.
 
+> **✅ This tool is working!** The path concatenation bug in `execute.py` has been fixed. Use the `execute_full_migration.sh` script for a fully automated migration.
+
 ## Prerequisites
 
 1. **Docker** installed and running
@@ -15,34 +17,36 @@ This guide explains how to use the automated migration script to migrate your So
 
 ### 1. Configure the Script
 
-Edit `run.sh` and update these variables at the top:
+Edit `execute_full_migration.sh` and update these variables at the top:
 
 ```bash
 SONARQUBE_URL="http://localhost:9000"                      # Your SonarQube Server URL
-SONARQUBE_TOKEN="your-sonarqube-token"                     # Admin token for SonarQube
-SONARCLOUD_URL="https://sonarcloud.io/"                    # SonarCloud URL
-SONARCLOUD_TOKEN="your-sonarcloud-token"                   # Admin token for SonarCloud
+SONARQUBE_TOKEN="your-sonarqube-token-here"                # Admin token for SonarQube
+SONARCLOUD_URL="https://sonarcloud.io/"                    # SonarCloud URL (or https://sc-staging.io/)
+SONARCLOUD_TOKEN="your-sonarcloud-token-here"              # Admin token for SonarCloud
 SONARCLOUD_ENTERPRISE_KEY="your-enterprise-key"            # Your SonarCloud Enterprise key
 SONARCLOUD_ORG_KEY="your-target-org"                       # Target organization in SonarCloud
-EXPORT_DIR="./sonarqube-export"                            # Directory for exported data
-CONCURRENCY=10                                              # Number of concurrent API requests
-TIMEOUT=60                                                  # Request timeout in seconds
+EXPORT_DIR="./files"                                       # Directory for exported data
+CONCURRENCY=10                                             # Number of concurrent API requests
+TIMEOUT=60                                                 # Request timeout in seconds
 ```
 
 ### 2. Run the Migration
 
 ```bash
-./run.sh
+chmod +x execute_full_migration.sh
+./execute_full_migration.sh
 ```
 
 The script will:
-1. ✅ Build the Docker image
-2. ✅ Extract all data from SonarQube Server
-3. ✅ Analyze and structure projects into organizations
-4. ✅ Map SonarQube organizations to SonarCloud
-5. ✅ Generate mappings for groups, profiles, gates, etc.
-6. ✅ Migrate everything to SonarCloud
-7. ✅ Verify the migration was successful
+1. ✅ Validate configuration
+2. ✅ Build the Docker image
+3. ✅ Extract all data from SonarQube Server
+4. ✅ Analyze and structure projects into organizations
+5. ✅ Automatically update organizations.csv with your SonarCloud org key
+6. ✅ Generate mappings for groups, profiles, gates, etc.
+7. ✅ Migrate everything to SonarCloud
+8. ✅ Verify the migration was successful
 
 ## What Gets Migrated?
 
@@ -88,10 +92,11 @@ docker build -t sonar-reports:local .
 
 ### Step 2: Extract from SonarQube
 ```bash
+# Note: Use host.docker.internal instead of localhost for Docker to access host
 docker run --rm \
-  -v $(pwd)/sonarqube-export:/app/files \
+  -v "$(pwd)/files:/app/files" \
   sonar-reports:local extract \
-  http://localhost:9000 \
+  http://host.docker.internal:9000 \
   <SONARQUBE_TOKEN> \
   --export_directory=/app/files \
   --concurrency=10 \
@@ -101,18 +106,24 @@ docker run --rm \
 ### Step 3: Generate Structure
 ```bash
 docker run --rm \
-  -v $(pwd)/sonarqube-export:/app/files \
+  -v "$(pwd)/files:/app/files" \
   sonar-reports:local structure \
   --export_directory=/app/files
 ```
 
 ### Step 4: Edit organizations.csv
-Open `sonarqube-export/organizations.csv` and add your SonarCloud organization key in the `sonarcloud_org_key` column.
+Open `files/organizations.csv` and add your SonarCloud organization key in the `sonarcloud_org_key` column (second column).
+
+Example:
+```csv
+sonarqube_org_key,sonarcloud_org_key,server_url,alm,url,is_cloud,project_count
+http://host.docker.internal:9000/,your-org-key,http://host.docker.internal:9000/,,,false,28
+```
 
 ### Step 5: Generate Mappings
 ```bash
 docker run --rm \
-  -v $(pwd)/sonarqube-export:/app/files \
+  -v "$(pwd)/files:/app/files" \
   sonar-reports:local mappings \
   --export_directory=/app/files
 ```
@@ -120,7 +131,7 @@ docker run --rm \
 ### Step 6: Run Migration
 ```bash
 docker run --rm \
-  -v $(pwd)/sonarqube-export:/app/files \
+  -v "$(pwd)/files:/app/files" \
   sonar-reports:local migrate \
   <SONARCLOUD_TOKEN> \
   <ENTERPRISE_KEY> \
@@ -133,24 +144,24 @@ docker run --rm \
 
 ### Migration Fails or Errors Occur
 
-1. **Check the log files** in `/tmp/`:
-   - `/tmp/docker-build.log` - Docker build errors
-   - `/tmp/extract.log` - Extraction errors
-   - `/tmp/structure.log` - Structure generation errors
-   - `/tmp/mappings.log` - Mapping generation errors
-   - `/tmp/migrate.log` - Migration errors
-
-2. **Check the migration requests log**:
+1. **Check the migration requests log**:
    ```bash
-   ls -lah sonarqube-export/*/requests.log
-   tail -100 sonarqube-export/*/requests.log
+   ls -lah files/*/requests.log
+   tail -100 files/*/requests.log
+   ```
+
+2. **Check extract data**:
+   ```bash
+   ls -lah files/
+   cat files/organizations.csv
+   cat files/projects.csv
    ```
 
 3. **Resume a failed migration**:
    If migration fails partway through, you can resume it:
    ```bash
    docker run --rm \
-     -v $(pwd)/sonarqube-export:/app/files \
+     -v "$(pwd)/files:/app/files" \
      sonar-reports:local migrate \
      <SONARCLOUD_TOKEN> \
      <ENTERPRISE_KEY> \
@@ -159,12 +170,15 @@ docker run --rm \
      --run_id=<MIGRATION_RUN_ID>
    ```
 
+   Find the run ID from the directory names in `files/` (e.g., `1770304645`)
+
 ### No Projects Extracted
 
 If the extraction completes but no projects are found:
 - Verify your SonarQube token has admin permissions
 - Check that projects exist in your SonarQube instance
-- Review `/tmp/extract.log` for API errors
+- Review the requests.log file in `files/<extract-id>/requests.log` for API errors
+- Ensure you're using `host.docker.internal` instead of `localhost` in Docker commands
 
 ### Authentication Errors
 
@@ -185,6 +199,14 @@ If you hit rate limits:
 Visit your SonarCloud organization and verify all projects are present:
 ```
 https://sonarcloud.io/organizations/<YOUR_ORG>/projects
+# Or for sc-staging.io:
+https://sc-staging.io/organizations/<YOUR_ORG>/projects
+```
+
+You can also verify via API:
+```bash
+curl -H "Authorization: Bearer <TOKEN>" \
+  "https://sonarcloud.io/api/projects/search?organization=<YOUR_ORG>&ps=500" | jq
 ```
 
 ### 2. Check Quality Gates
@@ -243,9 +265,16 @@ docker run --rm \
 ## Support
 
 For issues or questions:
-1. Check the log files in `/tmp/` and `sonarqube-export/`
-2. Review the [README.rst](README.rst) for detailed command documentation
-3. Open an issue on the project repository
+1. Check the log files in `files/*/requests.log`
+2. Review the [README.rst](README.rst) for detailed CLI command documentation
+3. Use `execute_full_migration.sh` for a fully automated migration
+4. Open an issue on the project repository
+
+## Script Files
+
+- **execute_full_migration.sh** - Automated migration script (recommended)
+- **README.rst** - Technical documentation for manual CLI usage
+- **MIGRATION_GUIDE.md** - Detailed migration guide (deprecated - use this README instead)
 
 ## Security Notes
 
