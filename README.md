@@ -20,7 +20,7 @@ Edit `execute_full_migration.sh` and update these variables at the top:
 ```bash
 SONARQUBE_URL="http://localhost:9000"                      # Your SonarQube Server URL
 SONARQUBE_TOKEN="your-sonarqube-token-here"                # Admin token for SonarQube
-SONARCLOUD_URL="https://sonarcloud.io/"                    # SonarCloud URL (or https://sc-staging.io/)
+SONARCLOUD_URL="https://sonarcloud.io/"                    # SonarCloud URL
 SONARCLOUD_TOKEN="your-sonarcloud-token-here"              # Admin token for SonarCloud
 SONARCLOUD_ENTERPRISE_KEY="your-enterprise-key"            # Your SonarCloud Enterprise key
 SONARCLOUD_ORG_KEY="your-target-org"                       # Target organization in SonarCloud
@@ -197,8 +197,6 @@ If you hit rate limits:
 Visit your SonarCloud organization and verify all projects are present:
 ```
 https://sonarcloud.io/organizations/<YOUR_ORG>/projects
-# Or for sc-staging.io:
-https://sc-staging.io/organizations/<YOUR_ORG>/projects
 ```
 
 You can also verify via API:
