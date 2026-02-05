@@ -34,8 +34,8 @@ def execute_task(task, concurrency, inputs, task_config, output_directory, run_i
         output_directory=output_directory,
         run_ids=run_ids
     )
-    export_dir = f"{output_directory}{run_id}/"
-    os.makedirs(f"{export_dir}/{task}", exist_ok=True)
+    export_dir = os.path.join(output_directory, run_id) + '/'
+    os.makedirs(os.path.join(export_dir, task), exist_ok=True)
     for idx, chunk in enumerate(dependencies):
         output = True
         for op_idx, operation_config in enumerate(task_config['operations']):
