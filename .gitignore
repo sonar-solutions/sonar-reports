@@ -112,3 +112,8 @@ ENV/
 
 # SonarQube Exports
 sonarqube-export/
+*.jsonl
+*.csv
+*.json
+*migration-files*
+DEBUG.md
