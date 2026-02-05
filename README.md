@@ -2,8 +2,6 @@
 
 This guide explains how to use the automated migration script to migrate your SonarQube Server projects to SonarCloud.
 
-> **✅ This tool is working!** The path concatenation bug in `execute.py` has been fixed. Use the `execute_full_migration.sh` script for a fully automated migration.
-
 ## Prerequisites
 
 1. **Docker** installed and running
