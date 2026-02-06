@@ -1,0 +1,155 @@
+name: Build Executables
+
+on:
+  push:
+    tags:
+      - 'v*'
+  workflow_dispatch:
+
+jobs:
+  build:
+    name: Build on ${{ matrix.os }} - ${{ matrix.arch }}
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        include:
+          # Windows builds
+          - os: windows-latest
+            arch: x64
+            artifact_name: sonar-reports-windows-x86_64.exe
+            binary_name: sonar-reports.exe
+
+          # Linux builds
+          - os: ubuntu-latest
+            arch: x64
+            artifact_name: sonar-reports-linux-x86_64
+            binary_name: sonar-reports
+
+          - os: ubuntu-latest
+            arch: arm64
+            artifact_name: sonar-reports-linux-arm64
+            binary_name: sonar-reports
+
+          # macOS builds
+          - os: macos-latest
+            arch: x64
+            artifact_name: sonar-reports-macos-x86_64
+            binary_name: sonar-reports
+
+          - os: macos-latest
+            arch: arm64
+            artifact_name: sonar-reports-macos-arm64
+            binary_name: sonar-reports
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+          pip install -r requirements-dev.txt
+
+      - name: Build with PyInstaller (Linux ARM64)
+        if: matrix.os == 'ubuntu-latest' && matrix.arch == 'arm64'
+        run: |
+          # For ARM64 on Linux, we need to use cross-compilation or native ARM runner
+          # This is a placeholder - you may need to use QEMU or native ARM runners
+          sudo apt-get update
+          sudo apt-get install -y qemu-user-static
+          pyinstaller sonar-reports.spec --target-arch aarch64
+
+      - name: Build with PyInstaller (Windows)
+        if: matrix.os == 'windows-latest'
+        run: |
+          pyinstaller sonar-reports.spec
+
+      - name: Build with PyInstaller (macOS)
+        if: matrix.os == 'macos-latest'
+        run: |
+          pyinstaller sonar-reports.spec --target-arch ${{ matrix.arch == 'arm64' && 'arm64' || 'x86_64' }}
+
+      - name: Build with PyInstaller (Linux x64)
+        if: matrix.os == 'ubuntu-latest' && matrix.arch == 'x64'
+        run: |
+          pyinstaller sonar-reports.spec
+
+      - name: Rename binary (Unix)
+        if: matrix.os != 'windows-latest'
+        run: |
+          mv dist/${{ matrix.binary_name }} dist/${{ matrix.artifact_name }}
+
+      - name: Rename binary (Windows)
+        if: matrix.os == 'windows-latest'
+        run: |
+          move dist\${{ matrix.binary_name }} dist\${{ matrix.artifact_name }}
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ matrix.artifact_name }}
+          path: dist/${{ matrix.artifact_name }}
+          retention-days: 90
+
+  # Windows ARM build (separate job as it requires special setup)
+  build-windows-arm:
+    name: Build on Windows ARM64
+    runs-on: windows-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+          pip install -r requirements-dev.txt
+
+      - name: Build with PyInstaller for ARM64
+        run: |
+          pyinstaller sonar-reports.spec --target-arch arm64
+
+      - name: Rename binary
+        run: |
+          move dist\sonar-reports.exe dist\sonar-reports-windows-arm64.exe
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: sonar-reports-windows-arm64.exe
+          path: dist/sonar-reports-windows-arm64.exe
+          retention-days: 90
+
+  release:
+    name: Create Release
+    needs: [build, build-windows-arm]
+    runs-on: ubuntu-latest
+    if: startsWith(github.ref, 'refs/tags/')
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Download all artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: dist/
+
+      - name: Create Release
+        uses: softprops/action-gh-release@v1
+        with:
+          files: dist/**/*
+          draft: false
+          prerelease: false
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

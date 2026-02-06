@@ -31,7 +31,8 @@ wheels/
 #  Usually these files are written by a python script from a template
 #  before PyInstaller builds the exe, so as to inject date/other infos into it.
 *.manifest
-*.spec
+# Keep our main spec file but ignore generated ones
+# !sonar-reports.spec
 
 # Installer logs
 pip-log.txt
@@ -116,4 +117,10 @@ sonarqube-export/
 *.csv
 *.json
 *migration-files*
-DEBUG.md
+files
+
+# Config files with secrets (keep example files in examples/)
+!examples/*.example.json
+config.json
+*-config.json
+my-*.json

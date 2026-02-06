@@ -1,7 +1,15 @@
 import os
 import json
+import sys
 
-TASK_DIR = os.path.join(os.path.dirname(__file__), './tasks/')
+# Handle both development and PyInstaller bundled execution
+if getattr(sys, 'frozen', False):
+    # Running as compiled executable
+    base_path = sys._MEIPASS
+    TASK_DIR = os.path.join(base_path, 'tasks')
+else:
+    # Running as source code
+    TASK_DIR = os.path.join(os.path.dirname(__file__), './tasks/')
 
 
 def get_sonarqube_config(client_version, root_dir, edition, files):
