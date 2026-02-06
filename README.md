@@ -38,6 +38,12 @@ The simplest way to migrate - just create a config file and run one command.
 scripts\build.bat
 ```
 
+**Docker (Linux x86_64):**
+```bash
+docker buildx build --platform linux/amd64 -f docker/Dockerfile.linux-build -t sonar-reports-linux-builder --load .
+docker run --rm -v "$(pwd)/dist:/output" sonar-reports-linux-builder cp /app/dist/sonar-reports-linux-x86_64 /output/
+```
+
 Alternatively, download pre-built executables from [Releases](https://github.com/YOUR_REPO/releases).
 
 ### Step 2: Create Configuration File
@@ -96,8 +102,6 @@ That's it! The tool automatically:
 3. ✅ Creates mappings (profiles, gates, groups)
 4. ✅ Migrates everything to SonarCloud
 5. ✅ Verifies the migration
-
-**See [docs/QUICK-START.md](docs/QUICK-START.md) for detailed step-by-step instructions (if available).**
 
 ---
 
@@ -372,6 +376,24 @@ For slower connections or rate limiting:
   }
 }
 ```
+
+### Docker Testing
+
+Test the Linux binary in a clean container environment:
+
+```bash
+# Build the test container
+docker build -f docker/Dockerfile.test-linux -t sonar-reports-test .
+
+# Run a test migration (requires SonarQube accessible from Docker)
+docker run --rm \
+  -v "$(pwd):/app" \
+  -w /app \
+  --add-host=host.docker.internal:host-gateway \
+  sonar-reports-test
+```
+
+**Note:** When running in Docker, use `host.docker.internal` instead of `localhost` in your config file to access services on the host machine.
 
 ---
 
