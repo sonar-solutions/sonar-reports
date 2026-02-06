@@ -7,6 +7,7 @@ Migrate your SonarQube Server projects to SonarCloud with a single command. No P
 - [Quick Start](#quick-start)
 - [What Gets Migrated](#what-gets-migrated)
 - [Alternative Methods](#alternative-methods)
+- [Run Commands Manually](#run-commands-manually)
 - [Post-Migration Steps](#post-migration-steps)
 - [Troubleshooting](#troubleshooting)
 - [Advanced Usage](#advanced-usage)
@@ -157,9 +158,7 @@ This script automatically detects your platform and runs the appropriate binary.
 
 ### Option 3: Docker (No Installation)
 
-If you prefer Docker over building the binary, you can run individual commands or use the automated script.
-
-#### Quick Migration Script
+If you prefer Docker, you can use the automated script for a quick migration:
 
 1. **Configure the script:**
    ```bash
@@ -178,7 +177,114 @@ If you prefer Docker over building the binary, you can run individual commands o
    ./scripts/execute_full_migration.sh
    ```
 
-#### Individual Docker Commands
+For step-by-step manual commands with Docker, see [Run Commands Manually](#run-commands-manually).
+
+### Option 4: Python CLI
+
+For maximum control, use the Python CLI directly:
+
+1. **Install dependencies:**
+   ```bash
+   pip install -r requirements.txt
+   ```
+
+2. **Run full migration with config file:**
+   ```bash
+   python src/main.py full-migrate migration-config.json
+   ```
+
+For step-by-step manual commands with Python, see [Run Commands Manually](#run-commands-manually).
+
+### Option 5: Using Config Files with Individual Commands
+
+You can use JSON config files with any command:
+
+```bash
+# Extract with config
+./dist/sonar-reports-macos-arm64 extract --config extract-config.json
+
+# Migrate with config
+./dist/sonar-reports-macos-arm64 migrate --config migrate-config.json
+```
+
+See [docs/CONFIG.md](docs/CONFIG.md) for configuration file documentation.
+
+---
+
+## Run Commands Manually
+
+If you prefer to run commands step-by-step for more control, you can execute the migration process in stages using any of these methods.
+
+### Using Executable Binary
+
+**1. Extract data from SonarQube:**
+```bash
+./sonar-reports-<platform> extract \
+  http://localhost:9000 \
+  YOUR_SONARQUBE_TOKEN \
+  --export_directory=./files \
+  --concurrency=10 \
+  --timeout=60
+```
+
+Optional extract parameters:
+- `--extract_type=all` - Extract all data (default)
+- `--target_task=getProjects` - Extract specific data only
+- `--extract_id=123456` - Resume a previous extract
+- `--pem_file_path` - Path to client certificate
+- `--key_file_path` - Path to certificate key
+- `--cert_password` - Certificate password
+
+**2. Generate organization structure:**
+```bash
+./sonar-reports-<platform> structure \
+  --export_directory=./files
+```
+
+**3. Update organizations.csv:**
+Edit `files/organizations.csv` and add your SonarCloud organization key to the `sonarcloud_org_key` column.
+
+**4. Generate mappings:**
+```bash
+./sonar-reports-<platform> mappings \
+  --export_directory=./files
+```
+
+**5. Migrate to SonarCloud:**
+```bash
+./sonar-reports-<platform> migrate \
+  YOUR_SONARCLOUD_TOKEN \
+  YOUR_ENTERPRISE_KEY \
+  --url=https://sonarcloud.io/ \
+  --export_directory=./files \
+  --concurrency=10
+```
+
+Optional migrate parameters:
+- `--run_id=123456` - Resume a previous migration
+- `--target_task=createProjects` - Migrate specific task only
+- `--edition=enterprise` - SonarCloud edition (default: enterprise)
+
+**6. Generate a migration report (optional):**
+```bash
+./sonar-reports-<platform> report \
+  --export_directory=./files \
+  --report_type=migration \
+  --filename=migration-report
+```
+
+**7. Reset SonarCloud (CAUTION - deletes everything):**
+```bash
+./sonar-reports-<platform> reset \
+  YOUR_SONARCLOUD_TOKEN \
+  YOUR_ENTERPRISE_KEY \
+  --url=https://sonarcloud.io/ \
+  --export_directory=./files
+```
+
+Replace `<platform>` with your downloaded executable name (e.g., `macos-arm64`, `macos-x86_64`, `linux-x86_64`, or `windows-x86_64.exe`).
+
+### Using Docker
 
 First, build the Docker image:
 ```bash
@@ -198,6 +304,14 @@ docker run --rm \
   --concurrency=10 \
   --timeout=60
 ```
+
+Optional extract parameters:
+- `--extract_type=all` - Extract all data (default)
+- `--target_task=getProjects` - Extract specific data only
+- `--extract_id=123456` - Resume a previous extract
+- `--pem_file_path` - Path to client certificate
+- `--key_file_path` - Path to certificate key
+- `--cert_password` - Certificate password
 
 **2. Generate organization structure:**
 ```bash
@@ -230,6 +344,11 @@ docker run --rm \
   --concurrency=10
 ```
 
+Optional migrate parameters:
+- `--run_id=123456` - Resume a previous migration
+- `--target_task=createProjects` - Migrate specific task only
+- `--edition=enterprise` - SonarCloud edition (default: enterprise)
+
 **6. Generate a migration report (optional):**
 ```bash
 docker run --rm \
@@ -251,16 +370,12 @@ docker run --rm \
   --export_directory=/app/files
 ```
 
-### Option 4: Python CLI
+### Using Python
 
-For maximum control, use the Python CLI directly:
-
-1. **Install dependencies:**
-   ```bash
-   pip install -r requirements.txt
-   ```
-
-2. **Run commands individually:**
+First, install dependencies:
+```bash
+pip install -r requirements.txt
+```
 
 **1. Extract data from SonarQube:**
 ```bash
@@ -327,25 +442,6 @@ python src/main.py reset \
   --export_directory=./files \
   --concurrency=10
 ```
-
-**8. Full migration with config file:**
-```bash
-python src/main.py full-migrate migration-config.json
-```
-
-### Option 5: Using Config Files with Individual Commands
-
-You can use JSON config files with any command:
-
-```bash
-# Extract with config
-./dist/sonar-reports-macos-arm64 extract --config extract-config.json
-
-# Migrate with config
-./dist/sonar-reports-macos-arm64 migrate --config migrate-config.json
-```
-
-See [docs/CONFIG.md](docs/CONFIG.md) for configuration file documentation.
 
 ---
 
