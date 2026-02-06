@@ -69,7 +69,7 @@ Edit `migration-config.json` with your credentials:
 }
 ```
 
-> Please note that this assumes that you are migrating all of your projects on your SonarQube Server instance to a single SonarCloud organization. If you need to migrate to multiple organizations, please refer to the [Alternative Methods](#alternative-methods) section below, where you can edit the `organizations.csv` file to specify different target organizations for different projects.
+> Please note that this assumes that you are migrating all of your projects on your SonarQube Server instance to a single SonarCloud organization. If you need to migrate to multiple organizations, please refer to the [Run Commands Manually](#run-commands-manually) section below, where you can edit the `organizations.csv` file to specify different target organizations for different projects.
 
 ### Step 3: Run Migration
 
