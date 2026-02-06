@@ -16,7 +16,7 @@ Migrate your SonarQube Server projects to SonarCloud with a single command. No P
 
 ## Quick Start
 
-The simplest way to migrate - just create a config file and run one command.
+The simplest way to migrate - download the executable, create a config file, and run one command.
 
 ### Prerequisites
 
@@ -26,25 +26,19 @@ The simplest way to migrate - just create a config file and run one command.
   - Admin token (enterprise-level permissions)
   - Target organization created and added to your enterprise
 
-### Step 1: Build the Executable
+### Step 1: Download the Executable
 
-**macOS/Linux:**
+Download the pre-built executable for your platform from the [Releases page](https://github.com/YOUR_REPO/releases):
+
+- **macOS (Apple Silicon)**: `sonar-reports-macos-arm64`
+- **macOS (Intel)**: `sonar-reports-macos-x86_64`
+- **Linux (x86_64)**: `sonar-reports-linux-x86_64`
+- **Windows (x86_64)**: `sonar-reports-windows-x86_64.exe`
+
+Make the executable runnable (macOS/Linux):
 ```bash
-./scripts/build.sh
+chmod +x sonar-reports-*
 ```
-
-**Windows:**
-```cmd
-scripts\build.bat
-```
-
-**Docker (Linux x86_64):**
-```bash
-docker buildx build --platform linux/amd64 -f docker/Dockerfile.linux-build -t sonar-reports-linux-builder --load .
-docker run --rm -v "$(pwd)/dist:/output" sonar-reports-linux-builder cp /app/dist/sonar-reports-linux-x86_64 /output/
-```
-
-Alternatively, download pre-built executables from [Releases](https://github.com/YOUR_REPO/releases).
 
 ### Step 2: Create Configuration File
 
@@ -76,25 +70,19 @@ Edit `migration-config.json` with your credentials:
 
 ### Step 3: Run Migration
 
-**macOS (Apple Silicon):**
+Run the executable with your config file:
+
+**macOS/Linux:**
 ```bash
-./dist/sonar-reports-macos-arm64 full-migrate migration-config.json
+./sonar-reports-<platform> full-migrate migration-config.json
 ```
 
-**macOS (Intel):**
-```bash
-./dist/sonar-reports-macos-x86_64 full-migrate migration-config.json
-```
-
-**Linux (x86_64):**
-```bash
-./dist/sonar-reports-linux-x86_64 full-migrate migration-config.json
-```
-
-**Windows (x86_64):**
+**Windows:**
 ```cmd
-dist\sonar-reports-windows-x86_64.exe full-migrate migration-config.json
+sonar-reports-windows-x86_64.exe full-migrate migration-config.json
 ```
+
+Replace `<platform>` with your downloaded executable name (e.g., `macos-arm64`, `macos-x86_64`, or `linux-x86_64`).
 
 That's it! The tool automatically:
 1. ✅ Extracts all data from SonarQube Server
@@ -127,7 +115,35 @@ That's it! The tool automatically:
 
 ## Alternative Methods
 
-### Option 1: Binary with Shell Script
+### Option 1: Build the Executable Yourself
+
+If you prefer to build the executable from source:
+
+**macOS/Linux:**
+```bash
+git clone https://github.com/YOUR_REPO/sonar-reports.git
+cd sonar-reports
+./scripts/build.sh
+```
+
+**Windows:**
+```cmd
+git clone https://github.com/YOUR_REPO/sonar-reports.git
+cd sonar-reports
+scripts\build.bat
+```
+
+**Docker (Linux x86_64):**
+```bash
+git clone https://github.com/YOUR_REPO/sonar-reports.git
+cd sonar-reports
+docker buildx build --platform linux/amd64 -f docker/Dockerfile.linux-build -t sonar-reports-linux-builder --load .
+docker run --rm -v "$(pwd)/dist:/output" sonar-reports-linux-builder cp /app/dist/sonar-reports-linux-x86_64 /output/
+```
+
+The built executable will be in the `dist/` directory. Then follow steps 2-3 from the Quick Start guide.
+
+### Option 2: Binary with Shell Script
 
 Use a shell script wrapper for the binary:
 
@@ -137,7 +153,7 @@ Use a shell script wrapper for the binary:
 
 This script automatically detects your platform and runs the appropriate binary.
 
-### Option 2: Docker (No Installation)
+### Option 3: Docker (No Installation)
 
 If you prefer Docker over building the binary:
 
@@ -158,7 +174,7 @@ If you prefer Docker over building the binary:
    ./scripts/execute_full_migration.sh
    ```
 
-### Option 3: Python CLI
+### Option 4: Python CLI
 
 For maximum control, use the Python CLI directly:
 
@@ -184,7 +200,7 @@ For maximum control, use the Python CLI directly:
    python src/main.py migrate YOUR_SONARCLOUD_TOKEN YOUR_ENTERPRISE_KEY --export_directory ./files
    ```
 
-### Option 4: Using Config Files with Individual Commands
+### Option 5: Using Config Files with Individual Commands
 
 You can use JSON config files with any command:
 
