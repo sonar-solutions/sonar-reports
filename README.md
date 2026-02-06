@@ -68,6 +68,8 @@ Edit `migration-config.json` with your credentials:
 }
 ```
 
+Please note that this assumes that you are migrating all of your projects on your SonarQube Server instancee to a single SonarCloud organization. If you need to migrate to multiple organizations, please refer to the [Alternative Methods](#alternative-methods) section below, where you can edit the `organizations.csv` file to specify different target organizations for different projects.
+
 ### Step 3: Run Migration
 
 Run the executable with your config file:
@@ -155,7 +157,9 @@ This script automatically detects your platform and runs the appropriate binary.
 
 ### Option 3: Docker (No Installation)
 
-If you prefer Docker over building the binary:
+If you prefer Docker over building the binary, you can run individual commands or use the automated script.
+
+#### Quick Migration Script
 
 1. **Configure the script:**
    ```bash
@@ -174,6 +178,79 @@ If you prefer Docker over building the binary:
    ./scripts/execute_full_migration.sh
    ```
 
+#### Individual Docker Commands
+
+First, build the Docker image:
+```bash
+docker build -t sonar-reports:local .
+```
+
+**Note:** When running from Docker, use `host.docker.internal` instead of `localhost` to access services on your host machine.
+
+**1. Extract data from SonarQube:**
+```bash
+docker run --rm \
+  -v "$(pwd)/files:/app/files" \
+  sonar-reports:local extract \
+  http://host.docker.internal:9000 \
+  YOUR_SONARQUBE_TOKEN \
+  --export_directory=/app/files \
+  --concurrency=10 \
+  --timeout=60
+```
+
+**2. Generate organization structure:**
+```bash
+docker run --rm \
+  -v "$(pwd)/files:/app/files" \
+  sonar-reports:local structure \
+  --export_directory=/app/files
+```
+
+**3. Update organizations.csv:**
+Edit `files/organizations.csv` and add your SonarCloud organization key to the `sonarcloud_org_key` column.
+
+**4. Generate mappings:**
+```bash
+docker run --rm \
+  -v "$(pwd)/files:/app/files" \
+  sonar-reports:local mappings \
+  --export_directory=/app/files
+```
+
+**5. Migrate to SonarCloud:**
+```bash
+docker run --rm \
+  -v "$(pwd)/files:/app/files" \
+  sonar-reports:local migrate \
+  YOUR_SONARCLOUD_TOKEN \
+  YOUR_ENTERPRISE_KEY \
+  --url=https://sonarcloud.io/ \
+  --export_directory=/app/files \
+  --concurrency=10
+```
+
+**6. Generate a migration report (optional):**
+```bash
+docker run --rm \
+  -v "$(pwd)/files:/app/files" \
+  sonar-reports:local report \
+  --export_directory=/app/files \
+  --report_type=migration \
+  --filename=migration-report
+```
+
+**7. Reset SonarCloud (CAUTION - deletes everything):**
+```bash
+docker run --rm \
+  -v "$(pwd)/files:/app/files" \
+  sonar-reports:local reset \
+  YOUR_SONARCLOUD_TOKEN \
+  YOUR_ENTERPRISE_KEY \
+  --url=https://sonarcloud.io/ \
+  --export_directory=/app/files
+```
+
 ### Option 4: Python CLI
 
 For maximum control, use the Python CLI directly:
@@ -184,21 +261,77 @@ For maximum control, use the Python CLI directly:
    ```
 
 2. **Run commands individually:**
-   ```bash
-   # Extract
-   python src/main.py extract http://localhost:9000 YOUR_TOKEN --export_directory ./files
 
-   # Structure
-   python src/main.py structure --export_directory ./files
+**1. Extract data from SonarQube:**
+```bash
+python src/main.py extract \
+  http://localhost:9000 \
+  YOUR_SONARQUBE_TOKEN \
+  --export_directory=./files \
+  --concurrency=10 \
+  --timeout=60
+```
 
-   # Edit organizations.csv to add your SonarCloud org key
+Optional extract parameters:
+- `--extract_type=all` - Extract all data (default)
+- `--target_task=getProjects` - Extract specific data only
+- `--extract_id=123456` - Resume a previous extract
+- `--pem_file_path` - Path to client certificate
+- `--key_file_path` - Path to certificate key
+- `--cert_password` - Certificate password
 
-   # Mappings
-   python src/main.py mappings --export_directory ./files
+**2. Generate organization structure:**
+```bash
+python src/main.py structure \
+  --export_directory=./files
+```
 
-   # Migrate
-   python src/main.py migrate YOUR_SONARCLOUD_TOKEN YOUR_ENTERPRISE_KEY --export_directory ./files
-   ```
+**3. Update organizations.csv:**
+Edit `files/organizations.csv` and add your SonarCloud organization key to the `sonarcloud_org_key` column.
+
+**4. Generate mappings:**
+```bash
+python src/main.py mappings \
+  --export_directory=./files
+```
+
+**5. Migrate to SonarCloud:**
+```bash
+python src/main.py migrate \
+  YOUR_SONARCLOUD_TOKEN \
+  YOUR_ENTERPRISE_KEY \
+  --url=https://sonarcloud.io/ \
+  --export_directory=./files \
+  --concurrency=10
+```
+
+Optional migrate parameters:
+- `--run_id=123456` - Resume a previous migration
+- `--target_task=createProjects` - Migrate specific task only
+- `--edition=enterprise` - SonarCloud edition (default: enterprise)
+
+**6. Generate a migration report (optional):**
+```bash
+python src/main.py report \
+  --export_directory=./files \
+  --report_type=migration \
+  --filename=migration-report
+```
+
+**7. Reset SonarCloud (CAUTION - deletes everything):**
+```bash
+python src/main.py reset \
+  YOUR_SONARCLOUD_TOKEN \
+  YOUR_ENTERPRISE_KEY \
+  --url=https://sonarcloud.io/ \
+  --export_directory=./files \
+  --concurrency=10
+```
+
+**8. Full migration with config file:**
+```bash
+python src/main.py full-migrate migration-config.json
+```
 
 ### Option 5: Using Config Files with Individual Commands
 
