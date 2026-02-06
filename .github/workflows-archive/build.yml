@@ -1,9 +1,7 @@
-name: Build, Push Docker Image, and Create Release
+name: Build and Push Docker Image (Archived - Manual Only)
 
 on:
-  push:
-    branches:
-      - main  # Change this to the branch you want to trigger on
+  workflow_dispatch:
 
 jobs:
   build:
