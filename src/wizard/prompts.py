@@ -1,0 +1,155 @@
+"""Display helpers and user prompts for the wizard interface"""
+import click
+from wizard.state import WizardPhase
+
+
+PHASE_DISPLAY_NAMES = {
+    WizardPhase.INIT: "Start",
+    WizardPhase.EXTRACT: "Extract",
+    WizardPhase.STRUCTURE: "Structure",
+    WizardPhase.ORG_MAPPING: "Org Mapping",
+    WizardPhase.MAPPINGS: "Mappings",
+    WizardPhase.VALIDATE: "Validate",
+    WizardPhase.MIGRATE: "Migrate",
+    WizardPhase.PIPELINES: "Pipelines",
+    WizardPhase.COMPLETE: "Complete",
+}
+
+PHASE_ORDER = [
+    WizardPhase.EXTRACT,
+    WizardPhase.STRUCTURE,
+    WizardPhase.ORG_MAPPING,
+    WizardPhase.MAPPINGS,
+    WizardPhase.VALIDATE,
+    WizardPhase.MIGRATE,
+    WizardPhase.PIPELINES,
+]
+
+
+def display_welcome():
+    """Display welcome message with ASCII art header"""
+    click.echo()
+    click.echo("=" * 60)
+    click.echo("  SonarQube Server to SonarQube Cloud Migration Wizard")
+    click.echo("=" * 60)
+    click.echo()
+    click.echo("This wizard will guide you through the migration process:")
+    click.echo("  1. Extract data from SonarQube Server")
+    click.echo("  2. Analyze organization structure")
+    click.echo("  3. Map organizations to SonarQube Cloud")
+    click.echo("  4. Generate entity mappings")
+    click.echo("  5. Validate migration prerequisites")
+    click.echo("  6. Execute migration")
+    click.echo("  7. Update CI/CD pipelines (optional)")
+    click.echo()
+
+
+def display_phase_progress(current_phase: WizardPhase):
+    """Display text-based progress indicator"""
+    if current_phase == WizardPhase.INIT:
+        current_idx = 0
+    elif current_phase == WizardPhase.COMPLETE:
+        current_idx = len(PHASE_ORDER)
+    else:
+        current_idx = PHASE_ORDER.index(current_phase) + 1
+
+    total = len(PHASE_ORDER)
+    phase_name = PHASE_DISPLAY_NAMES.get(current_phase, current_phase.value)
+
+    click.echo()
+    click.echo("-" * 60)
+    click.echo(f"  [{current_idx}/{total}] {phase_name}")
+    click.echo("-" * 60)
+
+
+def display_phase_start(phase: WizardPhase):
+    """Display phase starting message"""
+    phase_name = PHASE_DISPLAY_NAMES.get(phase, phase.value)
+    click.echo()
+    click.echo(f">>> Starting: {phase_name}")
+    click.echo()
+
+
+def display_phase_complete(phase: WizardPhase):
+    """Display phase completion message"""
+    phase_name = PHASE_DISPLAY_NAMES.get(phase, phase.value)
+    click.echo()
+    click.echo(f"<<< Completed: {phase_name}")
+
+
+def prompt_credentials(prompt_text: str, hide_input: bool = True) -> str:
+    """Collect credentials from user with hidden input"""
+    return click.prompt(prompt_text, hide_input=hide_input)
+
+
+def prompt_url(prompt_text: str, default: str = None) -> str:
+    """Collect URL from user"""
+    url = click.prompt(prompt_text, default=default)
+    if not url.endswith('/'):
+        url = f"{url}/"
+    return url
+
+
+def prompt_text(prompt_text: str, default: str = None) -> str:
+    """Collect text input from user"""
+    return click.prompt(prompt_text, default=default)
+
+
+def display_summary(title: str, stats_dict: dict):
+    """Display formatted summary"""
+    click.echo()
+    click.echo(f"  {title}:")
+    for key, value in stats_dict.items():
+        click.echo(f"    - {key}: {value}")
+
+
+def display_message(message: str):
+    """Display a simple message"""
+    click.echo(message)
+
+
+def display_error(message: str):
+    """Display an error message"""
+    click.echo(click.style(f"Error: {message}", fg='red'))
+
+
+def display_warning(message: str):
+    """Display a warning message"""
+    click.echo(click.style(f"Warning: {message}", fg='yellow'))
+
+
+def display_success(message: str):
+    """Display a success message"""
+    click.echo(click.style(message, fg='green'))
+
+
+def confirm_action(message: str, default: bool = False) -> bool:
+    """Prompt for confirmation"""
+    return click.confirm(message, default=default)
+
+
+def display_resume_info(state):
+    """Display information about the resumable state"""
+    click.echo()
+    click.echo("Previous wizard session found:")
+    click.echo(f"  - Current phase: {PHASE_DISPLAY_NAMES.get(state.phase, state.phase.value)}")
+    if state.source_url:
+        click.echo(f"  - Source URL: {state.source_url}")
+    if state.extract_id:
+        click.echo(f"  - Extract ID: {state.extract_id}")
+    if state.target_url:
+        click.echo(f"  - Target URL: {state.target_url}")
+    if state.enterprise_key:
+        click.echo(f"  - Enterprise Key: {state.enterprise_key}")
+    click.echo()
+
+
+def display_wizard_complete():
+    """Display wizard completion message"""
+    click.echo()
+    click.echo("=" * 60)
+    click.echo("  Migration Wizard Complete!")
+    click.echo("=" * 60)
+    click.echo()
+    click.echo("Your SonarQube Server data has been migrated to SonarQube Cloud.")
+    click.echo()
