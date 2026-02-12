@@ -16,7 +16,7 @@ def update_script(script, root_dir, dir_project_mapping):
             parsed=bashlex.parse(script),
             dir_project_mapping=dir_project_mapping
         )
-    except bashlex.parser.errors.ParsingError as e:
+    except bashlex.parser.errors.ParsingError:
         pass
 
     if not dir_project_mapping:

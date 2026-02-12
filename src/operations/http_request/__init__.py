@@ -1,6 +1,6 @@
 from asyncio import get_event_loop
 from .get import extract_chunk
-from .base import generate_auth_headers, configure_client_cert, configure_client, process_request_chunk
+from .base import generate_auth_headers, configure_client_cert as configure_client_cert, configure_client as configure_client, process_request_chunk
 
 MAPPING = dict(
     GET=extract_chunk,

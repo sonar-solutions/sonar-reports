@@ -119,6 +119,69 @@ Log in to your SonarQube Cloud organization and verify:
 
 ---
 
+## Interactive Wizard
+
+For a guided migration experience, use the interactive wizard command. The wizard walks you through each phase, prompting for credentials and providing progress feedback.
+
+### Command
+
+```bash
+docker run -it -v ./files:/app/files ghcr.io/sonar-solutions/sonar-reports:latest wizard
+```
+
+> **Note**: Use `-it` flag for interactive mode to enable prompts.
+
+### Options
+
+| Option | Description | Default |
+|--------|-------------|---------|
+| `--export_directory` | Root directory for export files and wizard state | `/app/files/` |
+
+### What the Wizard Does
+
+The wizard guides you through all migration phases:
+
+1. **Extract** - Prompts for SonarQube Server URL and admin token, optional client certificate
+2. **Structure** - Automatically generates organization and project mappings
+3. **Organization Mapping** - Prompts you to map each SonarQube Server org to a SonarCloud org key
+4. **Mappings** - Generates entity mappings (gates, profiles, groups, templates)
+5. **Validate** - Runs pre-flight validation checks
+6. **Migrate** - Confirms before pushing configurations to SonarCloud
+7. **Pipelines** - Optional CI/CD pipeline updates (if secrets.json exists)
+
+### Features
+
+- **Resume support**: If interrupted, the wizard saves state and resumes from the last completed phase
+- **Client certificate support**: Prompts for mTLS certificate details when needed
+- **Progress display**: Shows current phase and overall progress
+- **Validation**: Checks that all organizations are mapped before migration
+
+### Example Session
+
+```
+$ docker run -it -v ./files:/app/files ghcr.io/sonar-solutions/sonar-reports:latest wizard
+
+╔════════════════════════════════════════════════════════════════╗
+║     SonarQube Migration Wizard                                 ║
+║     Migrate from SonarQube Server to SonarQube Cloud          ║
+╚════════════════════════════════════════════════════════════════╝
+
+Phase 1 of 7: Extract
+─────────────────────
+SonarQube Server URL: https://sonar.example.com
+SonarQube Server Admin Token: ********
+Do you need to use a client certificate? [y/N]: n
+
+Extracting data from SonarQube Server...
+✓ Extract complete: 1706745600
+
+Phase 2 of 7: Structure
+───────────────────────
+...
+```
+
+---
+
 ## Detailed Workflow
 
 ### Phase 1: Extract

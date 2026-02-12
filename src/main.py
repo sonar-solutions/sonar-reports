@@ -1,7 +1,7 @@
 import json
 from datetime import datetime, UTC
 
-from constants import REPORT_TASKS, MIGRATION_TASKS
+from constants import MIGRATION_TASKS
 import click
 import os
 import asyncio
@@ -9,16 +9,20 @@ from execute import execute_plan
 from logs import configure_logger
 from operations.http_request import configure_client, configure_client_cert, get_server_details
 from plan import generate_task_plan, get_available_task_configs
-from utils import get_unique_extracts, export_csv, load_csv, filter_completed, get_latest_extract_id
+from utils import get_unique_extracts, export_csv, load_csv, filter_completed
 from validate import validate_migration
 from importlib import import_module
 from pipelines.process import update_pipelines
 from config import load_config_file, merge_config_with_cli
+from wizard import wizard as wizard_command
 
 
 @click.group()
 def cli():
     pass
+
+
+cli.add_command(wizard_command)
 
 
 @cli.command()

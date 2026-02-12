@@ -2,8 +2,11 @@ import os
 from hashlib import sha256
 from uuid import uuid4
 from importlib import import_module
-import logging
 import difflib
+
+TESTS_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+FILES_DIR = os.path.join(os.path.dirname(TESTS_DIR), 'files')
+
 class MockPlatform:
     def __init__(self, platform: str, case: str):
         self.platform = platform
@@ -78,9 +81,9 @@ class MockPlatform:
 
     async def create_or_update_file(self, token, repository, message, branch_name, file_path, content: str, sha,):
         self.updated_files[file_path] = content
-        output_dir = os.path.join('/app/files/', self.case.split('/')[-1])
+        output_dir = os.path.join(FILES_DIR, self.case.split('/')[-1])
         os.makedirs(output_dir, exist_ok=True)
-        with open('/'.join([output_dir, file_path.split('/')[-1]]), 'wt') as f:
+        with open(os.path.join(output_dir, file_path.split('/')[-1]), 'wt') as f:
             f.write(content)
         return dict(
             content=content,
