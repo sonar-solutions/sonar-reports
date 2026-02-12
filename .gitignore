@@ -125,5 +125,8 @@ config.json
 *-config.json
 my-*.json
 
+# Test output artifacts
+files/
+
 # Project notes (internal documentation)
 project-notes/

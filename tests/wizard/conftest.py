@@ -8,6 +8,8 @@ import pytest
 
 from wizard.state import WizardPhase, WizardState
 
+SONARQUBE_URL = "https://sonar.example.com/"
+
 
 @pytest.fixture
 def temp_export_dir() -> Generator[str, None, None]:
@@ -23,7 +25,7 @@ def sample_extract_data() -> Dict[str, Any]:
         "plan": [["getProjects", "getQualityProfiles"], ["getQualityGates"]],
         "version": "9.9.0.1234",
         "edition": "enterprise",
-        "url": "https://sonar.example.com/",
+        "url": SONARQUBE_URL,
         "target_tasks": ["getProjects", "getQualityProfiles", "getQualityGates"],
         "available_configs": ["getProjects", "getQualityProfiles", "getQualityGates"],
         "run_id": "1234567890"
@@ -36,14 +38,14 @@ def sample_organizations_csv() -> List[Dict[str, Any]]:
     return [
         {
             "sonarqube_org_key": "org-1",
-            "server_url": "https://sonar.example.com/",
+            "server_url": SONARQUBE_URL,
             "devops_binding": "github",
             "project_count": 5,
             "sonarcloud_org_key": ""
         },
         {
             "sonarqube_org_key": "org-2",
-            "server_url": "https://sonar.example.com/",
+            "server_url": SONARQUBE_URL,
             "devops_binding": "gitlab",
             "project_count": 3,
             "sonarcloud_org_key": "mapped-org-2"
@@ -57,14 +59,14 @@ def sample_organizations_mapped() -> List[Dict[str, Any]]:
     return [
         {
             "sonarqube_org_key": "org-1",
-            "server_url": "https://sonar.example.com/",
+            "server_url": SONARQUBE_URL,
             "devops_binding": "github",
             "project_count": 5,
             "sonarcloud_org_key": "cloud-org-1"
         },
         {
             "sonarqube_org_key": "org-2",
-            "server_url": "https://sonar.example.com/",
+            "server_url": SONARQUBE_URL,
             "devops_binding": "gitlab",
             "project_count": 3,
             "sonarcloud_org_key": "cloud-org-2"
@@ -79,21 +81,21 @@ def sample_projects_csv() -> List[Dict[str, Any]]:
         {
             "key": "project-1",
             "name": "Project One",
-            "server_url": "https://sonar.example.com/",
+            "server_url": SONARQUBE_URL,
             "sonarqube_org_key": "org-1",
             "visibility": "private"
         },
         {
             "key": "project-2",
             "name": "Project Two",
-            "server_url": "https://sonar.example.com/",
+            "server_url": SONARQUBE_URL,
             "sonarqube_org_key": "org-1",
             "visibility": "public"
         },
         {
             "key": "project-3",
             "name": "Project Three",
-            "server_url": "https://sonar.example.com/",
+            "server_url": SONARQUBE_URL,
             "sonarqube_org_key": "org-2",
             "visibility": "private"
         }
@@ -289,7 +291,7 @@ def wizard_state_at_phase(phase: WizardPhase, **kwargs) -> WizardState:
                  WizardPhase.VALIDATE, WizardPhase.MIGRATE, WizardPhase.PIPELINES,
                  WizardPhase.COMPLETE]:
         defaults["extract_id"] = "1234567890"
-        defaults["source_url"] = "https://sonar.example.com/"
+        defaults["source_url"] = SONARQUBE_URL
 
     if phase in [WizardPhase.ORG_MAPPING, WizardPhase.MAPPINGS, WizardPhase.VALIDATE,
                  WizardPhase.MIGRATE, WizardPhase.PIPELINES, WizardPhase.COMPLETE]:

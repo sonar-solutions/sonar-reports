@@ -6,6 +6,11 @@ from datetime import datetime, UTC
 import click
 
 from wizard.state import WizardPhase, WizardState
+
+REQUESTS_LOG = 'requests.log'
+ORGANIZATIONS_CSV = 'organizations.csv'
+PROJECTS_CSV = 'projects.csv'
+
 from wizard.prompts import (
     display_welcome,
     display_phase_progress,
@@ -64,29 +69,29 @@ def run_extract_phase(state: WizardState, export_directory: str) -> WizardState:
         os.makedirs(extract_directory, exist_ok=True)
 
         configure_logger(name='http_request', level='INFO',
-                         output_file=os.path.join(extract_directory, 'requests.log'))
+                         output_file=os.path.join(extract_directory, REQUESTS_LOG))
         configure_client(url=state.source_url, cert=cert, server_version=server_version,
                          token=token, concurrency=25, timeout=60)
 
         configs = get_available_task_configs(client_version=server_version, edition=edition)
-        target_tasks = list([k for k in configs.keys() if k.startswith('get')])
+        target_tasks = [k for k in configs.keys() if k.startswith('get')]
 
         plan = generate_task_plan(target_tasks=target_tasks, task_configs=configs)
 
         with open(os.path.join(extract_directory, 'extract.json'), 'wt') as f:
             json.dump(
-                dict(
-                    plan=plan,
-                    version=server_version,
-                    edition=edition,
-                    url=state.source_url,
-                    target_tasks=target_tasks,
-                    available_configs=list(configs.keys()),
-                    run_id=extract_id,
-                ), f
+                {
+                    "plan": plan,
+                    "version": server_version,
+                    "edition": edition,
+                    "url": state.source_url,
+                    "target_tasks": target_tasks,
+                    "available_configs": list(configs.keys()),
+                    "run_id": extract_id,
+                }, f
             )
 
-        execute_plan(execution_plan=plan, inputs=dict(url=state.source_url), concurrency=25,
+        execute_plan(execution_plan=plan, inputs={"url": state.source_url}, concurrency=25,
                      task_configs=configs, output_directory=export_directory,
                      current_run_id=extract_id, run_ids={extract_id})
 
@@ -160,7 +165,7 @@ def run_org_mapping_phase(state: WizardState, export_directory: str) -> WizardSt
     display_message("")
 
     # Load organizations
-    organizations = load_csv(directory=export_directory, filename='organizations.csv')
+    organizations = load_csv(directory=export_directory, filename=ORGANIZATIONS_CSV)
 
     if not organizations:
         display_error("No organizations found. Please run structure analysis first.")
@@ -211,22 +216,22 @@ def run_mappings_phase(state: WizardState, export_directory: str) -> WizardState
 
     try:
         extract_mapping = get_unique_extracts(directory=export_directory)
-        projects = load_csv(directory=export_directory, filename='projects.csv')
+        projects = load_csv(directory=export_directory, filename=PROJECTS_CSV)
         project_org_mapping = {p['server_url'] + p['key']: p['sonarqube_org_key'] for p in projects}
 
-        mapping = dict(
-            templates=map_templates(project_org_mapping=project_org_mapping,
-                                    extract_mapping=extract_mapping,
-                                    export_directory=export_directory),
-            profiles=map_profiles(extract_mapping=extract_mapping,
-                                  project_org_mapping=project_org_mapping,
-                                  export_directory=export_directory),
-            gates=map_gates(project_org_mapping=project_org_mapping,
-                            extract_mapping=extract_mapping,
-                            export_directory=export_directory),
-            portfolios=map_portfolios(export_directory=export_directory,
-                                      extract_mapping=extract_mapping)
-        )
+        mapping = {
+            "templates": map_templates(project_org_mapping=project_org_mapping,
+                                       extract_mapping=extract_mapping,
+                                       export_directory=export_directory),
+            "profiles": map_profiles(extract_mapping=extract_mapping,
+                                     project_org_mapping=project_org_mapping,
+                                     export_directory=export_directory),
+            "gates": map_gates(project_org_mapping=project_org_mapping,
+                               extract_mapping=extract_mapping,
+                               export_directory=export_directory),
+            "portfolios": map_portfolios(export_directory=export_directory,
+                                         extract_mapping=extract_mapping),
+        }
         mapping['groups'] = map_groups(project_org_mapping=project_org_mapping,
                                        profiles=mapping['profiles'],
                                        extract_mapping=extract_mapping,
@@ -262,7 +267,7 @@ def run_validate_phase(state: WizardState, export_directory: str) -> WizardState
     display_phase_start(WizardPhase.VALIDATE)
 
     # Check required files exist
-    required_files = ['organizations.csv', 'projects.csv', 'templates.csv',
+    required_files = [ORGANIZATIONS_CSV, PROJECTS_CSV, 'templates.csv',
                       'profiles.csv', 'gates.csv', 'groups.csv']
 
     missing_files = []
@@ -276,7 +281,7 @@ def run_validate_phase(state: WizardState, export_directory: str) -> WizardState
         raise ValueError(f"Missing required files: {', '.join(missing_files)}")
 
     # Check all organizations have cloud mappings
-    organizations = load_csv(directory=export_directory, filename='organizations.csv')
+    organizations = load_csv(directory=export_directory, filename=ORGANIZATIONS_CSV)
     unmapped_orgs = [org['sonarqube_org_key'] for org in organizations
                     if not org.get('sonarcloud_org_key')]
 
@@ -286,7 +291,7 @@ def run_validate_phase(state: WizardState, export_directory: str) -> WizardState
         raise ValueError(f"Unmapped organizations found: {', '.join(unmapped_orgs)}")
 
     # Count entities to migrate
-    projects = load_csv(directory=export_directory, filename='projects.csv')
+    projects = load_csv(directory=export_directory, filename=PROJECTS_CSV)
     profiles = load_csv(directory=export_directory, filename='profiles.csv')
     templates = load_csv(directory=export_directory, filename='templates.csv')
     gates = load_csv(directory=export_directory, filename='gates.csv')
@@ -349,32 +354,32 @@ def run_migrate_phase(state: WizardState, export_directory: str) -> WizardState:
         extract_mapping = get_unique_extracts(directory=export_directory)
 
         configure_logger(name='http_request', level='INFO',
-                         output_file=os.path.join(run_dir, 'requests.log'))
+                         output_file=os.path.join(run_dir, REQUESTS_LOG))
 
-        target_tasks = list([k for k in configs.keys()
-                            if not any([k.startswith(i) for i in ['get', 'delete', 'reset']])])
+        target_tasks = [k for k in configs.keys()
+                        if not any(k.startswith(i) for i in ('get', 'delete', 'reset'))]
         completed = completed.union(MIGRATION_TASKS)
 
         plan = generate_task_plan(target_tasks=target_tasks, task_configs=configs, completed=completed)
 
         with open(os.path.join(run_dir, 'plan.json'), 'wt') as f:
             json.dump(
-                dict(
-                    plan=plan,
-                    version='cloud',
-                    edition='enterprise',
-                    completed=list(completed),
-                    url=url,
-                    target_tasks=target_tasks,
-                    available_configs=list(configs.keys()),
-                    run_id=run_id,
-                ), f
+                {
+                    "plan": plan,
+                    "version": "cloud",
+                    "edition": "enterprise",
+                    "completed": list(completed),
+                    "url": url,
+                    "target_tasks": target_tasks,
+                    "available_configs": list(configs.keys()),
+                    "run_id": run_id,
+                }, f
             )
 
         plan = filter_completed(plan=plan, directory=run_dir)
 
         execute_plan(execution_plan=plan,
-                     inputs=dict(url=url, api_url=api_url, enterprise_key=state.enterprise_key),
+                     inputs={"url": url, "api_url": api_url, "enterprise_key": state.enterprise_key},
                      concurrency=25,
                      task_configs=configs,
                      output_directory=export_directory,
@@ -452,7 +457,7 @@ def run_pipelines_phase(state: WizardState, export_directory: str) -> WizardStat
         os.makedirs(run_dir, exist_ok=True)
 
         configure_logger(name='http_request', level='INFO',
-                         output_file=os.path.join(pipeline_dir, 'requests.log'))
+                         output_file=os.path.join(pipeline_dir, REQUESTS_LOG))
 
         loop = asyncio.get_event_loop()
         results = loop.run_until_complete(

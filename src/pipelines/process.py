@@ -16,6 +16,11 @@ CLOUD_TOKEN_NAME = 'SONARQUBE_CLOUD_TOKEN'
 CLOUD_URL_NAME = 'SONARQUBE_CLOUD_URL'
 
 
+def _write_file(path, content):
+    with open(path, 'wt') as f:
+        f.write(content)
+
+
 async def update_pipelines(input_directory, output_directory, org_secret_mapping, sonar_token, sonar_url):
     orgs, secrets = await create_org_secrets(
         migration_directory=input_directory,
@@ -141,12 +146,12 @@ async def update_pipeline_files(platform, repo_folder, projects, repository, bra
     mappings = defaultdict(lambda: dict(projects=set(), scanners=set()))
     for file, dir_project_mapping in updated:
         file_folder = create_nested_folders(current_dir=repo_folder, folder_string=os.path.dirname(file['file_path']))
-        with open(os.path.join(file_folder, f"input.{os.path.basename(file['file_path'])}"), 'wt') as f:
-            f.write(file['content'])
+        await loop.run_in_executor(None, partial(
+            _write_file, os.path.join(file_folder, f"input.{os.path.basename(file['file_path'])}"), file['content']))
         if file['is_updated']:
             updated_files.append(file)
-            with open(os.path.join(file_folder, f"output.{os.path.basename(file['file_path'])}"), 'wt') as f:
-                f.write(file['updated_content'])
+            await loop.run_in_executor(None, partial(
+                _write_file, os.path.join(file_folder, f"output.{os.path.basename(file['file_path'])}"), file['updated_content']))
         for key, value in dir_project_mapping.items():
             mappings[key]['projects'] = mappings[key]['projects'].union(value['projects'])
             mappings[key]['scanners'] = mappings[key]['scanners'].union(value['scanners'])
@@ -233,14 +238,15 @@ async def update_config_files(platform, project_mappings, projects, root_dir, sc
     return [config for config in updated_configs if config['is_updated']]
 
 async def update_config_file(scanner_mod, file, projects, project_mappings, repo_folder):
+    loop = asyncio.get_event_loop()
     file_folder = create_nested_folders(current_dir=repo_folder, folder_string=os.path.dirname(file['file_path']))
-    with open(os.path.join(file_folder, f"input.{os.path.basename(file['file_path'])}"), 'wt') as f:
-        f.write(file['content'])
+    await loop.run_in_executor(None, partial(
+        _write_file, os.path.join(file_folder, f"input.{os.path.basename(file['file_path'])}"), file['content']))
     file.update(scanner_mod.update_content(content=file['content'], projects=projects,
                                                  project_mappings=project_mappings))
     if file['is_updated']:
-        with open(os.path.join(file_folder, f"output.{os.path.basename(file['file_path'])}"), 'wt') as f:
-            f.write(file['updated_content'])
+        await loop.run_in_executor(None, partial(
+            _write_file, os.path.join(file_folder, f"output.{os.path.basename(file['file_path'])}"), file['updated_content']))
     return file
 
 
