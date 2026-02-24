@@ -70,6 +70,31 @@
       }
     },
     {
+      "operation": "apply_filter",
+      "kwargs": {
+        "left": {
+          "value": {
+            "path": "permission"
+          }
+        },
+        "right": {
+          "value": {
+            "raw": ["admin", "codeviewer", "issueadmin", "securityhotspotadmin", "scan", "user"]
+          }
+        },
+        "operator": {
+          "value": {
+            "raw": "in"
+          }
+        },
+        "warn_message": {
+          "value": {
+            "raw": "Skipping invalid project permission"
+          }
+        }
+      }
+    },
+    {
       "operation": "http_request",
       "kwargs": {
         "url": {
