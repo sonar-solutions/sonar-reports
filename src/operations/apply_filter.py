@@ -1,3 +1,6 @@
+from logs import log_event
+
+
 def process_chunk(chunk):
     results = []
     for obj in chunk:
@@ -8,7 +11,7 @@ def process_chunk(chunk):
     return results
 
 
-def execute(left, right, operator, **kwargs):
+def execute(left, right, operator, warn_message=None, **kwargs):
     allowed = True
     if operator == 'neq':
         allowed = left != right
@@ -26,4 +29,7 @@ def execute(left, right, operator, **kwargs):
         allowed = left >= right
     elif operator == 'lte':
         allowed = left <= right
+    if not allowed and warn_message:
+        log_event(level='WARNING', status='anomalous', process_type='apply_filter',
+                  payload=dict(message=f"{warn_message}: '{left}'"))
     return allowed
