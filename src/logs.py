@@ -46,7 +46,7 @@ def log_event(level: str, status: str, process_type: str, payload: dict, logger_
     )
     log_message = {
         "process_type": process_type,
-        "created_ts": datetime.now(UTC).timestamp(),
+        "created_ts": datetime.now(UTC).isoformat(timespec='seconds'),
         "status": status,
         "payload": payload,
         **attributes
