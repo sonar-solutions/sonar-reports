@@ -16,6 +16,8 @@ from pipelines.process import update_pipelines
 from config import load_config_file, merge_config_with_cli
 from wizard import wizard as wizard_command
 
+REQUESTS_LOG = 'requests.log'
+
 
 @click.group()
 def cli():
@@ -106,7 +108,7 @@ def extract(url, token, config_file, export_directory: str, extract_type, pem_fi
     server_version, edition = get_server_details(url=url, cert=cert, token=token)
     extract_directory = os.path.join(export_directory, extract_id + '/')
     os.makedirs(extract_directory, exist_ok=True)
-    configure_logger(name='http_request', level='INFO', output_file=os.path.join(extract_directory, 'requests.log'), operation='extract')
+    configure_logger(name='http_request', level='INFO', output_file=os.path.join(extract_directory, REQUESTS_LOG))
     configure_client(url=url, cert=cert, server_version=server_version, token=token, concurrency=concurrency,
                      timeout=timeout)
     configs = get_available_task_configs(client_version=server_version, edition=edition)
@@ -281,7 +283,7 @@ def migrate(token, edition, url, enterprise_key, concurrency, run_id, export_dir
         create_plan = True
     run_dir, completed = validate_migration(directory=export_directory, run_id=run_id)
     extract_mapping = get_unique_extracts(directory=export_directory)
-    configure_logger(name='http_request', level='INFO', output_file=os.path.join(run_dir, 'requests.log'), operation='migrate')
+    configure_logger(name='http_request', level='INFO', output_file=os.path.join(run_dir, REQUESTS_LOG))
     if target_task is not None:
         target_tasks = [target_task]
     else:
@@ -355,7 +357,7 @@ def reset(token, edition, url, enterprise_key, concurrency, export_directory):
     run_dir = os.path.join(export_directory, run_id)
     os.makedirs(run_dir, exist_ok=True)
 
-    configure_logger(name='http_request', level='INFO', output_file=os.path.join(run_dir, 'requests.log'), operation='reset')
+    configure_logger(name='http_request', level='INFO', output_file=os.path.join(run_dir, REQUESTS_LOG))
     target_tasks = list([k for k in configs.keys() if k.startswith('delete')])
     plan = generate_task_plan(
         target_tasks=target_tasks,
@@ -403,7 +405,7 @@ def pipelines(secrets_file, sonar_token, sonar_url, input_directory, output_dire
     run_id = str(int(datetime.now(UTC).timestamp()))
     run_dir = os.path.join(output_directory, run_id)
     os.makedirs(run_dir, exist_ok=True)
-    configure_logger(name='http_request', level='INFO', output_file=os.path.join(pipeline_dir, 'requests.log'))
+    configure_logger(name='http_request', level='INFO', output_file=os.path.join(pipeline_dir, REQUESTS_LOG))
     results = asyncio.run(
         update_pipelines(
             input_directory=pipeline_dir, output_directory=run_dir, org_secret_mapping=secrets, sonar_token=sonar_token,

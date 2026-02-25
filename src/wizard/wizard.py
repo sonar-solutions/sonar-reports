@@ -37,6 +37,51 @@ from wizard.prompts import (
 )
 
 
+def _is_ssl_error(e: Exception) -> bool:
+    """Walk the exception chain to detect SSL errors (httpx wraps ssl.SSLError in ConnectError)."""
+    cause: BaseException | None = e
+    seen: set[int] = set()
+    while cause is not None and id(cause) not in seen:
+        seen.add(id(cause))
+        if isinstance(cause, ssl.SSLError):
+            return True
+        cause = cause.__cause__ or cause.__context__
+    return False
+
+
+def _handle_extract_exception(
+    e: Exception, state: WizardState
+) -> tuple[bool, str | None, str | None, str | None]:
+    """Handle an extraction error.
+
+    Returns (should_raise, pem_file_path, key_file_path, cert_password).
+    When should_raise is True the caller must re-raise the exception.
+    state.source_url is cleared on all paths except a cert retry.
+    """
+    if _is_ssl_error(e):
+        display_error(
+            "SSL/TLS error — the server may require a client certificate, "
+            "or has an invalid SSL certificate."
+        )
+        if confirm_action("Would you like to provide a client certificate?", default=True):
+            pem_file_path = prompt_text("Path to client certificate PEM file")
+            key_file_path = prompt_text("Path to client certificate key file")
+            cert_password = prompt_credentials(
+                "Certificate password (leave empty if none)", hide_input=True
+            )
+            return False, pem_file_path, key_file_path, cert_password or None
+        if not confirm_action(MSG_RETRY_PROMPT, default=True):
+            state.source_url = None
+            return True, None, None, None
+    else:
+        display_error(f"Extract failed: {str(e)}")
+        if not confirm_action(MSG_RETRY_PROMPT, default=True):
+            state.source_url = None
+            return True, None, None, None
+    state.source_url = None
+    return False, None, None, None
+
+
 def run_extract_phase(state: WizardState, export_directory: str) -> WizardState:
     """Collect source URL/token and run extract"""
     from operations.http_request import configure_client, configure_client_cert, get_server_details
@@ -111,51 +156,10 @@ def run_extract_phase(state: WizardState, export_directory: str) -> WizardState:
             break
 
         except Exception as e:
-            # Walk the exception chain to detect SSL errors.
-            # httpx 0.27.x wraps ssl.SSLError inside httpx.ConnectError.
-            ssl_error = False
-            cause: BaseException | None = e
-            seen: set[int] = set()
-            while cause is not None and id(cause) not in seen:
-                seen.add(id(cause))
-                if isinstance(cause, ssl.SSLError):
-                    ssl_error = True
-                    break
-                cause = cause.__cause__ or cause.__context__
-
-            if ssl_error:
-                display_error(
-                    "SSL/TLS error — the server may require a client certificate, "
-                    "or has an invalid SSL certificate."
-                )
-                if confirm_action("Would you like to provide a client certificate?", default=True):
-                    pem_file_path = prompt_text("Path to client certificate PEM file")
-                    key_file_path = prompt_text("Path to client certificate key file")
-                    cert_password = prompt_credentials(
-                        "Certificate password (leave empty if none)", hide_input=True
-                    )
-                    if not cert_password:
-                        cert_password = None
-                    continue  # retry with cert; URL and token are preserved
-                # User declined cert — offer full retry or exit
-                if confirm_action(MSG_RETRY_PROMPT, default=True):
-                    state.source_url = None
-                    pem_file_path = None
-                    key_file_path = None
-                    cert_password = None
-                    continue
-                state.source_url = None
+            should_raise, pem_file_path, key_file_path, cert_password = _handle_extract_exception(e, state)
+            if should_raise:
                 raise
-
-            display_error(f"Extract failed: {str(e)}")
-            if confirm_action(MSG_RETRY_PROMPT, default=True):
-                state.source_url = None
-                pem_file_path = None
-                key_file_path = None
-                cert_password = None
-                continue
-            state.source_url = None  # Clear invalid URL so next resume re-prompts
-            raise
+            continue
 
     display_phase_complete(WizardPhase.EXTRACT)
     return state
