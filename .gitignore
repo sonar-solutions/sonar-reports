@@ -130,3 +130,6 @@ files/
 
 # Project notes (internal documentation)
 project-notes/
+
+# Temporary working directory
+tmp/
