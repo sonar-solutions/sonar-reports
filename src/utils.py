@@ -41,8 +41,8 @@ def multi_extract_object_reader(directory: str, mapping: dict[str: str], key):
 
 
 def export_csv(directory, name, data):
-    if data:
-        with open(os.path.join(directory, f'{name}.csv'), 'wt') as f:
+    with open(os.path.join(directory, f'{name}.csv'), 'wt') as f:
+        if data:
             writer = csv.DictWriter(f, fieldnames=data[0].keys())
             writer.writeheader()
             writer.writerows([{k:json.dumps(v) if any([isinstance(v, i) for i in [dict, list, bool]]) else v for k, v in row.items()} for row in data])
