@@ -2,7 +2,7 @@
 import json
 import os
 import sys
-from datetime import datetime, UTC
+from utils import generate_run_id
 
 import ssl
 
@@ -113,7 +113,7 @@ def run_extract_phase(state: WizardState, export_directory: str) -> WizardState:
             continue
 
         # Generate extract ID
-        extract_id = str(int(datetime.now(UTC).timestamp()))
+        extract_id = generate_run_id(export_directory)
         state.extract_id = extract_id
 
         try:
@@ -467,7 +467,7 @@ def run_migrate_phase(state: WizardState, export_directory: str) -> WizardState:
         token = prompt_credentials("SonarQube Cloud Admin Token")
 
         try:
-            run_id = str(int(datetime.now(UTC).timestamp()))
+            run_id = generate_run_id(export_directory)
             state.migration_run_id = run_id
 
             url = state.target_url
@@ -598,7 +598,7 @@ def run_pipelines_phase(state: WizardState, export_directory: str) -> WizardStat
             display_error("No migration data found for pipeline updates")
             raise ValueError("No migration data found")
 
-        run_id = str(int(datetime.now(UTC).timestamp()))
+        run_id = generate_run_id(export_directory)
         run_dir = os.path.join(export_directory, run_id)
         os.makedirs(run_dir, exist_ok=True)
 

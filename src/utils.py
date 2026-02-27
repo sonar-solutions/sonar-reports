@@ -2,6 +2,16 @@ import os
 import json
 import csv
 from collections import defaultdict
+from datetime import datetime, UTC
+
+
+def generate_run_id(directory: str) -> str:
+    today = datetime.now(UTC).strftime('%m-%d-%Y')
+    existing = [
+        d for d in os.listdir(directory)
+        if os.path.isdir(os.path.join(directory, d)) and d.startswith(today + '-')
+    ]
+    return f"{today}-{len(existing) + 1:02d}"
 
 
 def object_reader(directory: str, key: str):
@@ -18,8 +28,10 @@ def object_reader(directory: str, key: str):
 
 
 def get_latest_extract_id(directory):
-    dirs = [d for d in os.listdir(directory) if os.path.isdir(os.path.join(directory, d)) and d.isnumeric()]
-    return max(dirs, key=int) if dirs else None
+    dirs = [d for d in os.listdir(directory)
+            if os.path.isdir(os.path.join(directory, d))
+            and os.path.exists(os.path.join(directory, d, 'extract.json'))]
+    return max(dirs) if dirs else None
 
 
 def get_unique_extracts(directory, key='extract.json'):

@@ -1,5 +1,4 @@
 import json
-from datetime import datetime, UTC
 
 from constants import MIGRATION_TASKS
 import click
@@ -9,7 +8,7 @@ from execute import execute_plan
 from logs import configure_logger
 from operations.http_request import configure_client, configure_client_cert, get_server_details
 from plan import generate_task_plan, get_available_task_configs
-from utils import get_unique_extracts, export_csv, load_csv, filter_completed
+from utils import get_unique_extracts, export_csv, load_csv, filter_completed, generate_run_id
 from validate import validate_migration
 from importlib import import_module
 from pipelines.process import update_pipelines
@@ -103,7 +102,7 @@ def extract(url, token, config_file, export_directory: str, extract_type, pem_fi
     if not url.endswith('/'):
         url = f"{url}/"
     if extract_id is None:
-        extract_id = str(int(datetime.now(UTC).timestamp()))
+        extract_id = generate_run_id(export_directory)
     cert = configure_client_cert(key_file_path, pem_file_path, cert_password)
     server_version, edition = get_server_details(url=url, cert=cert, token=token)
     extract_directory = os.path.join(export_directory, extract_id + '/')
@@ -279,7 +278,7 @@ def migrate(token, edition, url, enterprise_key, concurrency, run_id, export_dir
     configure_client(url=api_url, cert=None, server_version="cloud", token=token)
     configs = get_available_task_configs(client_version='cloud', edition=edition)
     if run_id is None:
-        run_id = str(int(datetime.now(UTC).timestamp()))
+        run_id = generate_run_id(export_directory)
         create_plan = True
     run_dir, completed = validate_migration(directory=export_directory, run_id=run_id)
     extract_mapping = get_unique_extracts(directory=export_directory)
@@ -353,7 +352,7 @@ def reset(token, edition, url, enterprise_key, concurrency, export_directory):
     configure_client(url=url, cert=None, server_version="cloud", token=token)
     api_url = url.replace('https://', 'https://api.')
     configure_client(url=api_url, cert=None, server_version="cloud", token=token)
-    run_id = str(int(datetime.now(UTC).timestamp()))
+    run_id = generate_run_id(export_directory)
     run_dir = os.path.join(export_directory, run_id)
     os.makedirs(run_dir, exist_ok=True)
 
@@ -402,7 +401,7 @@ def pipelines(secrets_file, sonar_token, sonar_url, input_directory, output_dire
     else:
         click.echo("No Migrations Found")
         return
-    run_id = str(int(datetime.now(UTC).timestamp()))
+    run_id = generate_run_id(output_directory)
     run_dir = os.path.join(output_directory, run_id)
     os.makedirs(run_dir, exist_ok=True)
     configure_logger(name='http_request', level='INFO', output_file=os.path.join(pipeline_dir, REQUESTS_LOG))
