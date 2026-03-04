@@ -24,6 +24,7 @@ from wizard.prompts import (
     PHASE_DISPLAY_NAMES,
     PHASE_ORDER,
     _validate_server_url,
+    _is_localhost_url,
 )
 from tests.test_wizard.conftest import wizard_state_at_phase
 
@@ -327,8 +328,8 @@ class TestPromptUrl:
         assert 'http' in result.output  # error mentions http/https
         assert 'https://sonarqube.example.com/' in result.output
 
-    def test_validate_true_rejects_localhost(self):
-        """validate=True should reject http://localhost/"""
+    def test_validate_true_shows_docker_notice_for_localhost(self):
+        """validate=True should show Docker bridging notice for localhost and re-prompt"""
         runner = CliRunner()
 
         @click.command()
@@ -336,11 +337,13 @@ class TestPromptUrl:
             click.echo(prompt_url("URL", validate=True))
 
         result = runner.invoke(cmd, input='http://localhost/\nhttps://sonarqube.example.com\n')
-        assert 'Error' in result.output
-        assert 'localhost' in result.output
+        assert 'Docker' in result.output or 'docker' in result.output
+        assert 'host.docker.internal' in result.output
+        # Eventually accepts the valid URL
+        assert 'https://sonarqube.example.com/' in result.output
 
-    def test_validate_true_rejects_127_0_0_1(self):
-        """validate=True should reject http://127.0.0.1/"""
+    def test_validate_true_shows_docker_notice_for_127_0_0_1(self):
+        """validate=True should show Docker bridging notice for 127.0.0.1 and re-prompt"""
         runner = CliRunner()
 
         @click.command()
@@ -348,7 +351,8 @@ class TestPromptUrl:
             click.echo(prompt_url("URL", validate=True))
 
         result = runner.invoke(cmd, input='http://127.0.0.1/\nhttps://sonarqube.example.com\n')
-        assert 'Error' in result.output
+        assert 'host.docker.internal' in result.output
+        assert 'https://sonarqube.example.com/' in result.output
 
     def test_validate_false_accepts_localhost(self):
         """validate=False (default) should accept localhost without error"""
@@ -377,22 +381,43 @@ class TestValidateServerUrl:
         assert error is not None
         assert "http" in error
 
-    def test_localhost_returns_error(self):
-        error = _validate_server_url("http://localhost")
-        assert error is not None
-        assert "localhost" in error
+    def test_localhost_returns_none(self):
+        """localhost is a valid URL format; loopback detection is handled separately"""
+        assert _validate_server_url("http://localhost") is None
 
-    def test_127_0_0_1_returns_error(self):
-        error = _validate_server_url("http://127.0.0.1")
-        assert error is not None
+    def test_127_0_0_1_returns_none(self):
+        assert _validate_server_url("http://127.0.0.1") is None
 
-    def test_ipv6_loopback_returns_error(self):
-        error = _validate_server_url("http://[::1]")
-        assert error is not None
+    def test_ipv6_loopback_returns_none(self):
+        assert _validate_server_url("http://[::1]") is None
 
-    def test_0_0_0_0_returns_error(self):
-        error = _validate_server_url("http://0.0.0.0")
-        assert error is not None
+    def test_0_0_0_0_returns_none(self):
+        assert _validate_server_url("http://0.0.0.0") is None
+
+
+class TestIsLocalhostUrl:
+    """Tests for the _is_localhost_url helper"""
+
+    def test_localhost_is_loopback(self):
+        assert _is_localhost_url("http://localhost") is True
+
+    def test_localhost_with_port_is_loopback(self):
+        assert _is_localhost_url("http://localhost:9000") is True
+
+    def test_127_0_0_1_is_loopback(self):
+        assert _is_localhost_url("http://127.0.0.1") is True
+
+    def test_ipv6_loopback(self):
+        assert _is_localhost_url("http://[::1]") is True
+
+    def test_0_0_0_0_is_loopback(self):
+        assert _is_localhost_url("http://0.0.0.0") is True
+
+    def test_external_host_is_not_loopback(self):
+        assert _is_localhost_url("https://sonarqube.example.com") is False
+
+    def test_host_docker_internal_is_not_loopback(self):
+        assert _is_localhost_url("http://host.docker.internal:9000") is False
 
 
 class TestPromptCredentials:
