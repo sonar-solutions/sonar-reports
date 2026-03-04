@@ -1,4 +1,5 @@
 import json
+import tempfile
 
 from constants import MIGRATION_TASKS
 import click
@@ -80,7 +81,7 @@ def extract(url, token, config_file, export_directory: str, extract_type, pem_fi
             concurrency = config.get('concurrency', 25)
             timeout = config.get('timeout', 60)
             extract_id = config.get('extract_id')
-        except (FileNotFoundError, json.JSONDecodeError) as e:
+        except (FileNotFoundError, json.JSONDecodeError, ValueError) as e:
             click.echo(f"Error loading config file: {e}")
             return
     else:
@@ -101,6 +102,11 @@ def extract(url, token, config_file, export_directory: str, extract_type, pem_fi
 
     if not url.endswith('/'):
         url = f"{url}/"
+    export_directory = os.path.realpath(export_directory)
+    _allowed = [os.path.realpath(os.getcwd()), os.path.realpath(tempfile.gettempdir())]
+    if not any(export_directory.startswith(b + os.sep) or export_directory == b for b in _allowed):
+        click.echo("Error: export_directory must be within the working directory")
+        return
     if extract_id is None:
         extract_id = generate_run_id(export_directory)
     cert = configure_client_cert(key_file_path, pem_file_path, cert_password)
@@ -253,7 +259,7 @@ def migrate(token, edition, url, enterprise_key, concurrency, run_id, export_dir
             export_directory = config.get('export_directory', '/app/files/')
             target_task = config.get('target_task')
             skip_profiles = config.get('skip_profiles', False)
-        except (FileNotFoundError, json.JSONDecodeError) as e:
+        except (FileNotFoundError, json.JSONDecodeError, ValueError) as e:
             click.echo(f"Error loading config file: {e}")
             return
     else:
@@ -321,7 +327,11 @@ def migrate(token, edition, url, enterprise_key, concurrency, run_id, export_dir
 
     try:
         from analysis_report import generate_final_analysis_report
-        report_rows = generate_final_analysis_report(run_directory=run_dir)
+        run_dir_real = os.path.realpath(run_dir)
+        cwd_base = os.path.realpath(os.getcwd())
+        if not (run_dir_real.startswith(cwd_base + os.sep) or run_dir_real == cwd_base):
+            raise ValueError("run_dir is outside the working directory")
+        report_rows = generate_final_analysis_report(run_directory=run_dir_real)
         if report_rows:
             success_count = sum(1 for r in report_rows if r['outcome'] == 'success')
             failure_count = sum(1 for r in report_rows if r['outcome'] == 'failure')
@@ -450,7 +460,7 @@ def full_migrate(config_file):
     """
     try:
         config = load_config_file(config_file)
-    except (FileNotFoundError, json.JSONDecodeError) as e:
+    except (FileNotFoundError, json.JSONDecodeError, ValueError) as e:
         click.echo(f"Error loading config file: {e}")
         return
 

@@ -1,7 +1,9 @@
 import json
 import os
+import tempfile
 
 from utils import export_csv
+
 
 URL_ENTITY_MAP = {
     '/api/projects/create': 'Project',
@@ -139,13 +141,21 @@ def _process_entry(entry):
 
 
 def generate_final_analysis_report(run_directory, output_directory=None):
+    cwd_base = os.path.realpath(os.getcwd())
+    tmp_base = os.path.realpath(tempfile.gettempdir())
     run_directory = os.path.realpath(run_directory)
+    if not run_directory.startswith(cwd_base + os.sep) and not run_directory.startswith(tmp_base + os.sep):
+        raise ValueError(f"run_directory must be within the working directory: {run_directory}")
     if output_directory is None:
         output_directory = run_directory
     else:
         output_directory = os.path.realpath(output_directory)
+        if not output_directory.startswith(cwd_base + os.sep) and not output_directory.startswith(tmp_base + os.sep):
+            raise ValueError(f"output_directory must be within the working directory: {output_directory}")
 
-    log_path = os.path.join(run_directory, 'requests.log')
+    log_path = os.path.realpath(os.path.join(run_directory, 'requests.log'))
+    if not log_path.startswith(run_directory + os.sep):
+        raise ValueError(f"log path is outside run_directory: {log_path}")
     if not os.path.exists(log_path):
         return []
 
