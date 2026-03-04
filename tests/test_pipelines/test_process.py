@@ -38,26 +38,26 @@ class TestUpdatePipelineFile:
         self.platform = github_platform
 
     def test_updates_sonar_variables(self):
-        file = dict(
-            file_path='.github/workflows/sonar.yml',
-            content=SIMPLE_WORKFLOW_YAML,
-            yaml=load_yaml(SIMPLE_WORKFLOW_YAML),
-            sha='abc123'
-        )
-        result_file, mapping = self.update_pipeline_file(platform=self.platform, file=file)
+        file = {
+            'file_path': '.github/workflows/sonar.yml',
+            'content': SIMPLE_WORKFLOW_YAML,
+            'yaml': load_yaml(SIMPLE_WORKFLOW_YAML),
+            'sha': 'abc123'
+        }
+        result_file, _ = self.update_pipeline_file(platform=self.platform, file=file)
 
         assert result_file['is_updated'] is True
         assert 'SONARQUBE_CLOUD_TOKEN' in result_file['updated_content']
         assert 'SONARQUBE_CLOUD_URL' in result_file['updated_content']
 
     def test_no_sonar_commands_not_updated(self):
-        file = dict(
-            file_path='.github/workflows/ci.yml',
-            content=NON_SONAR_WORKFLOW_YAML,
-            yaml=load_yaml(NON_SONAR_WORKFLOW_YAML),
-            sha='abc123'
-        )
-        result_file, mapping = self.update_pipeline_file(platform=self.platform, file=file)
+        file = {
+            'file_path': '.github/workflows/ci.yml',
+            'content': NON_SONAR_WORKFLOW_YAML,
+            'yaml': load_yaml(NON_SONAR_WORKFLOW_YAML),
+            'sha': 'abc123'
+        }
+        result_file, _ = self.update_pipeline_file(platform=self.platform, file=file)
 
         assert result_file['is_updated'] is False
 
@@ -73,12 +73,12 @@ class TestUpdatePipelineFile:
         result = identify_pipeline_type(platform=mock_platform, file={})
         assert result is None
 
-        file = dict(
-            file_path='.github/workflows/sonar.yml',
-            content=SIMPLE_WORKFLOW_YAML,
-            yaml=load_yaml(SIMPLE_WORKFLOW_YAML),
-            sha='abc123'
-        )
+        file = {
+            'file_path': '.github/workflows/sonar.yml',
+            'content': SIMPLE_WORKFLOW_YAML,
+            'yaml': load_yaml(SIMPLE_WORKFLOW_YAML),
+            'sha': 'abc123'
+        }
         result_file, mapping = self.update_pipeline_file(platform=mock_platform, file=file)
 
         assert result_file['is_updated'] is False
@@ -119,12 +119,7 @@ class TestCreateOrgSecrets:
 
     def test_missing_org_key_raises_key_error(self, tmp_path):
         """Bug fix: missing org key should raise KeyError with useful message"""
-        org_data = [dict(
-            is_cloud=True,
-            sonarcloud_org_key='my-org',
-            sonarqube_org_key='sq-org',
-            alm='github'
-        )]
+        org_data = [{'is_cloud': True, 'sonarcloud_org_key': 'my-org', 'sonarqube_org_key': 'sq-org', 'alm': 'github'}]
 
         # Write a fake generateOrganizationMappings JSONL file
         import json
@@ -148,12 +143,7 @@ class TestCreateOrgSecrets:
     def test_non_cloud_orgs_skipped(self, tmp_path):
         """Organizations without is_cloud=True are skipped"""
         import json
-        org_data = [dict(
-            is_cloud=False,
-            sonarcloud_org_key='my-org',
-            sonarqube_org_key='sq-org',
-            alm='github'
-        )]
+        org_data = [{'is_cloud': False, 'sonarcloud_org_key': 'my-org', 'sonarqube_org_key': 'sq-org', 'alm': 'github'}]
         mappings_dir = tmp_path / 'generateOrganizationMappings'
         mappings_dir.mkdir()
         with open(mappings_dir / '0.jsonl', 'wt') as f:

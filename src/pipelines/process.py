@@ -188,7 +188,7 @@ def update_pipeline_file(platform, file):
     pipeline_type = identify_pipeline_type(platform=platform, file=file)
     if pipeline_type is None:
         file['is_updated'] = False
-        return file, dict()
+        return file, {}
     targets = pipeline_type.process_yaml(file=file)
     dir_project_mapping = dict()
     file['is_updated'] = False
@@ -252,8 +252,7 @@ async def update_config_file(scanner_mod, file, projects, project_mappings, repo
     file_folder = create_nested_folders(current_dir=repo_folder, folder_string=os.path.dirname(file['file_path']))
     await loop.run_in_executor(None, partial(
         _write_file, os.path.join(file_folder, f"input.{os.path.basename(file['file_path'])}"), file['content']))
-    file.update(scanner_mod.update_content(content=file['content'], projects=projects,
-                                                 project_mappings=project_mappings))
+    file.update(scanner_mod.update_content(file['content'], projects, project_mappings))
     if file['is_updated']:
         await loop.run_in_executor(None, partial(
             _write_file, os.path.join(file_folder, f"output.{os.path.basename(file['file_path'])}"), file['updated_content']))

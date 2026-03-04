@@ -36,7 +36,7 @@ def update_script(script, root_dir, dir_project_mapping):
         if 'sonar.projectKey' in line:
             include = False
             if root_dir not in dir_project_mapping:
-                dir_project_mapping[root_dir] = dict(projects=set(), scanners=set())
+                dir_project_mapping[root_dir] = {'projects': set(), 'scanners': set()}
             dir_project_mapping[root_dir]['projects'].add(line.split('=')[-1])
         if 'sonar.projectName' in line:
             include = False

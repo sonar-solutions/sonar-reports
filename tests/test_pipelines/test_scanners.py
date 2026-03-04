@@ -90,11 +90,7 @@ class TestGradleScanner:
     def test_update_content_is_noop(self):
         """Gradle update_content is a no-op stub"""
         content = "sonarqube { properties { property 'sonar.projectKey', 'old' } }"
-        result = self.gradle.update_content(
-            content=content,
-            projects={'my-project'},
-            project_mappings=PROJECT_MAPPINGS
-        )
+        result = self.gradle.update_content(content, {'my-project'}, PROJECT_MAPPINGS)
 
         assert result['is_updated'] is False
         assert result['updated_content'] == content
@@ -111,11 +107,7 @@ class TestDotnetScanner:
 
     def test_update_content_is_noop(self):
         content = "some dotnet sonar config"
-        result = self.dotnet.update_content(
-            content=content,
-            projects={'my-project'},
-            project_mappings=PROJECT_MAPPINGS
-        )
+        result = self.dotnet.update_content(content, {'my-project'}, PROJECT_MAPPINGS)
 
         assert result['is_updated'] is False
         assert result['updated_content'] == content

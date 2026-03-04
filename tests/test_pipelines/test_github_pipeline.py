@@ -24,7 +24,7 @@ jobs:
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
           SONAR_HOST_URL: ${{ secrets.SONAR_HOST_URL }}
 """)
-        file = dict(yaml=yaml, file_path='.github/workflows/sonar.yml', content='')
+        file = {'yaml': yaml, 'file_path': '.github/workflows/sonar.yml', 'content': ''}
         pipelines = self.github.process_yaml(file=file)
 
         assert len(pipelines) == 1
@@ -45,7 +45,7 @@ jobs:
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
           SONAR_HOST_URL: ${{ secrets.SONAR_HOST_URL }}
 """)
-        file = dict(yaml=yaml, file_path='.github/workflows/sonar.yml', content='')
+        file = {'yaml': yaml, 'file_path': '.github/workflows/sonar.yml', 'content': ''}
         pipelines = self.github.process_yaml(file=file)
 
         assert pipelines[0]['runs_sonar'] is True
@@ -60,7 +60,7 @@ jobs:
       - uses: actions/checkout@v3
       - run: npm install && npm test
 """)
-        file = dict(yaml=yaml, file_path='.github/workflows/ci.yml', content='')
+        file = {'yaml': yaml, 'file_path': '.github/workflows/ci.yml', 'content': ''}
         pipelines = self.github.process_yaml(file=file)
 
         assert len(pipelines) == 1
@@ -69,14 +69,14 @@ jobs:
 
     def test_empty_jobs(self):
         yaml = load_yaml("jobs: {}")
-        file = dict(yaml=yaml, file_path='.github/workflows/empty.yml', content='')
+        file = {'yaml': yaml, 'file_path': '.github/workflows/empty.yml', 'content': ''}
         pipelines = self.github.process_yaml(file=file)
 
         assert pipelines == []
 
     def test_no_jobs_key(self):
         yaml = load_yaml("name: My Workflow\non: push")
-        file = dict(yaml=yaml, file_path='.github/workflows/nojobs.yml', content='')
+        file = {'yaml': yaml, 'file_path': '.github/workflows/nojobs.yml', 'content': ''}
         pipelines = self.github.process_yaml(file=file)
 
         assert pipelines == []
@@ -92,7 +92,7 @@ jobs:
     steps:
       - uses: SonarSource/sonarcloud-github-action@master
 """)
-        file = dict(yaml=yaml, file_path='.github/workflows/sonar.yml', content='')
+        file = {'yaml': yaml, 'file_path': '.github/workflows/sonar.yml', 'content': ''}
         pipelines = self.github.process_yaml(file=file)
 
         variables = pipelines[0]['variables']

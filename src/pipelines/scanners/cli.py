@@ -29,7 +29,7 @@ def update_content(content, projects:set, project_mappings):
         if key not in updated_keys:
             updated_content.append(_find_mapped_value(key, path, projects, project_mappings) or "")
     is_updated = any(p in project_mappings for p in projects)
-    return dict(updated_content="\n".join(updated_content), is_updated=is_updated)
+    return {'updated_content': "\n".join(updated_content), 'is_updated': is_updated}
 
 def format_value(key, path, project):
     return f"{key}={extract_path_value(obj=project, path=path, default='')}"

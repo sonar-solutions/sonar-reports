@@ -23,7 +23,7 @@ class TestUpdateScript:
 
     def test_gradle_command(self):
         script = "gradle sonarqube -Dsonar.projectKey=my-project"
-        updated, mapping = update_script(script=script, root_dir='./', dir_project_mapping={})
+        _, mapping = update_script(script=script, root_dir='./', dir_project_mapping={})
 
         assert './' in mapping
         assert 'gradle' in mapping['./']['scanners']
@@ -49,11 +49,11 @@ class TestUpdateScript:
         # Simulate: process_command_list found sonar in a subdir, so root_dir not in mapping
         # but script still has sonar.projectKey tokens
         preloaded_mapping = {
-            './subdir': dict(projects=set(), scanners={'cli'})
+            './subdir': {'projects': set(), 'scanners': {'cli'}}
         }
         script = "sonar-scanner -Dsonar.projectKey=my-project"
         # Should not raise KeyError
-        updated, mapping = update_script(script=script, root_dir='./', dir_project_mapping=preloaded_mapping)
+        _, mapping = update_script(script=script, root_dir='./', dir_project_mapping=preloaded_mapping)
 
         assert './' in mapping
         assert 'my-project' in mapping['./']['projects']
@@ -63,13 +63,13 @@ class TestUpdateScript:
         script = "echo 'unclosed"  # malformed shell — may trigger parse error
         # Should not raise
         try:
-            updated, mapping = update_script(script=script, root_dir='./', dir_project_mapping={})
+            update_script(script=script, root_dir='./', dir_project_mapping={})
         except Exception as exc:
             pytest.fail(f"update_script raised unexpectedly: {exc}")
 
     def test_empty_script(self):
         script = ""
-        updated, mapping = update_script(script=script, root_dir='./', dir_project_mapping={})
+        updated, _ = update_script(script=script, root_dir='./', dir_project_mapping={})
 
         assert updated == ""
 
@@ -92,7 +92,7 @@ class TestProcessCommandParts:
     def test_sonar_scanner_command(self):
         parts = [self._make_word_part('sonar-scanner'),
                  self._make_word_part('-Dsonar.projectKey=my-key')]
-        current_dir, runs_sonar, project, scanners = process_command_parts(
+        _, runs_sonar, project, scanners = process_command_parts(
             parts=parts, current_dir='./', root_directory='./'
         )
         assert runs_sonar is True
@@ -101,7 +101,7 @@ class TestProcessCommandParts:
 
     def test_cd_changes_directory(self):
         parts = [self._make_word_part('cd'), self._make_word_part('subdir')]
-        current_dir, runs_sonar, project, scanners = process_command_parts(
+        current_dir, runs_sonar, _, _ = process_command_parts(
             parts=parts, current_dir='./', root_directory='./'
         )
         assert 'subdir' in current_dir
@@ -110,14 +110,14 @@ class TestProcessCommandParts:
     def test_cd_bare_resets_to_root(self):
         """cd with no arg resets to root_directory"""
         parts = [self._make_word_part('cd')]
-        current_dir, runs_sonar, project, scanners = process_command_parts(
+        current_dir, _, _, _ = process_command_parts(
             parts=parts, current_dir='./subdir', root_directory='./'
         )
         assert current_dir == './'
 
     def test_unrelated_command(self):
         parts = [self._make_word_part('echo'), self._make_word_part('hello')]
-        current_dir, runs_sonar, project, scanners = process_command_parts(
+        _, runs_sonar, project, scanners = process_command_parts(
             parts=parts, current_dir='./', root_directory='./'
         )
         assert runs_sonar is False
@@ -126,7 +126,7 @@ class TestProcessCommandParts:
 
     def test_non_word_parts_ignored(self):
         parts = [self._make_non_word_part(), self._make_word_part('sonar-scanner')]
-        current_dir, runs_sonar, project, scanners = process_command_parts(
+        _, runs_sonar, _, _ = process_command_parts(
             parts=parts, current_dir='./', root_directory='./'
         )
         # sonar-scanner not at index 0 after non-word leading part, so not detected
