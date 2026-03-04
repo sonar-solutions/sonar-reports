@@ -1,6 +1,8 @@
 FROM python:3.14-slim
 
-RUN apt-get --assume-yes update && apt-get --assume-yes install bash
+RUN apt-get --assume-yes update \
+    && apt-get --assume-yes install --no-install-recommends bash \
+    && rm -rf /var/lib/apt/lists/*
 
 RUN mkdir /app
 COPY requirements.txt /app/requirements.txt

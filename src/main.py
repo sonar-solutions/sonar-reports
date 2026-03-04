@@ -81,7 +81,7 @@ def extract(url, token, config_file, export_directory: str, extract_type, pem_fi
             concurrency = config.get('concurrency', 25)
             timeout = config.get('timeout', 60)
             extract_id = config.get('extract_id')
-        except (FileNotFoundError, json.JSONDecodeError, ValueError) as e:
+        except (FileNotFoundError, ValueError) as e:
             click.echo(f"Error loading config file: {e}")
             return
     else:
@@ -259,7 +259,7 @@ def migrate(token, edition, url, enterprise_key, concurrency, run_id, export_dir
             export_directory = config.get('export_directory', '/app/files/')
             target_task = config.get('target_task')
             skip_profiles = config.get('skip_profiles', False)
-        except (FileNotFoundError, json.JSONDecodeError, ValueError) as e:
+        except (FileNotFoundError, ValueError) as e:
             click.echo(f"Error loading config file: {e}")
             return
     else:
