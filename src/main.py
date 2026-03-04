@@ -17,6 +17,7 @@ from config import load_config_file, merge_config_with_cli
 from wizard import wizard as wizard_command
 
 REQUESTS_LOG = 'requests.log'
+DEFAULT_EXPORT_DIR = '/app/files/'
 
 
 @click.group()
@@ -25,6 +26,42 @@ def cli():
 
 
 cli.add_command(wizard_command)
+
+
+def _build_extract_params(config_file, url, token, export_directory, extract_type,
+                           pem_file_path, key_file_path, cert_password, target_task,
+                           concurrency, timeout, extract_id):
+    if config_file:
+        config = load_config_file(config_file)
+        cli_args = {
+            'url': url, 'token': token, 'export_directory': export_directory,
+            'extract_type': extract_type, 'pem_file_path': pem_file_path,
+            'key_file_path': key_file_path, 'cert_password': cert_password,
+            'target_task': target_task, 'concurrency': concurrency,
+            'timeout': timeout, 'extract_id': extract_id,
+        }
+        config = merge_config_with_cli(config, cli_args)
+        return {
+            'url': config.get('url'), 'token': config.get('token'),
+            'export_directory': config.get('export_directory', DEFAULT_EXPORT_DIR),
+            'extract_type': config.get('extract_type', 'all'),
+            'pem_file_path': config.get('pem_file_path'),
+            'key_file_path': config.get('key_file_path'),
+            'cert_password': config.get('cert_password'),
+            'target_task': config.get('target_task'),
+            'concurrency': config.get('concurrency', 25),
+            'timeout': config.get('timeout', 60),
+            'extract_id': config.get('extract_id'),
+        }
+    return {
+        'url': url, 'token': token,
+        'export_directory': export_directory or DEFAULT_EXPORT_DIR,
+        'extract_type': extract_type or 'all',
+        'pem_file_path': pem_file_path, 'key_file_path': key_file_path,
+        'cert_password': cert_password, 'target_task': target_task,
+        'concurrency': concurrency or 25, 'timeout': timeout or 60,
+        'extract_id': extract_id,
+    }
 
 
 @cli.command()
@@ -51,49 +88,17 @@ def extract(url, token, config_file, export_directory: str, extract_type, pem_fi
 
     You can also use --config to specify a JSON configuration file instead of command-line arguments.
     """
-    # Load config file if provided
-    if config_file:
-        try:
-            config = load_config_file(config_file)
-            # Merge CLI args with config file (CLI takes precedence)
-            cli_args = {
-                'url': url,
-                'token': token,
-                'export_directory': export_directory,
-                'extract_type': extract_type,
-                'pem_file_path': pem_file_path,
-                'key_file_path': key_file_path,
-                'cert_password': cert_password,
-                'target_task': target_task,
-                'concurrency': concurrency,
-                'timeout': timeout,
-                'extract_id': extract_id,
-            }
-            config = merge_config_with_cli(config, cli_args)
-            url = config.get('url')
-            token = config.get('token')
-            export_directory = config.get('export_directory', '/app/files/')
-            extract_type = config.get('extract_type', 'all')
-            pem_file_path = config.get('pem_file_path')
-            key_file_path = config.get('key_file_path')
-            cert_password = config.get('cert_password')
-            target_task = config.get('target_task')
-            concurrency = config.get('concurrency', 25)
-            timeout = config.get('timeout', 60)
-            extract_id = config.get('extract_id')
-        except (FileNotFoundError, ValueError) as e:
-            click.echo(f"Error loading config file: {e}")
-            return
-    else:
-        # Set defaults if not using config file
-        if export_directory is None:
-            export_directory = '/app/files/'
-        if extract_type is None:
-            extract_type = 'all'
-        if concurrency is None:
-            concurrency = 25
-        if timeout is None:
-            timeout = 60
+    try:
+        p = _build_extract_params(config_file, url, token, export_directory, extract_type,
+                                   pem_file_path, key_file_path, cert_password, target_task,
+                                   concurrency, timeout, extract_id)
+    except (FileNotFoundError, ValueError) as e:
+        click.echo(f"Error loading config file: {e}")
+        return
+    url, token = p['url'], p['token']
+    export_directory, extract_type = p['export_directory'], p['extract_type']
+    pem_file_path, key_file_path, cert_password = p['pem_file_path'], p['key_file_path'], p['cert_password']
+    target_task, concurrency, timeout, extract_id = p['target_task'], p['concurrency'], p['timeout'], p['extract_id']
 
     # Validate required arguments
     if not url or not token:
@@ -210,6 +215,40 @@ def mappings(export_directory):
         export_csv(directory=export_directory, name=k, data=v)
 
 
+def _build_migrate_params(config_file, token, enterprise_key, edition, url, run_id,
+                           concurrency, export_directory, target_task, skip_profiles):
+    if config_file:
+        config = load_config_file(config_file)
+        cli_args = {
+            'token': token, 'enterprise_key': enterprise_key, 'edition': edition,
+            'url': url, 'run_id': run_id, 'concurrency': concurrency,
+            'export_directory': export_directory, 'target_task': target_task,
+            'skip_profiles': skip_profiles if skip_profiles else None,
+        }
+        config = merge_config_with_cli(config, cli_args)
+        return {
+            'token': config.get('token'),
+            'enterprise_key': config.get('enterprise_key'),
+            'edition': config.get('edition', 'enterprise'),
+            'url': config.get('url', 'https://sonarcloud.io/'),
+            'run_id': config.get('run_id'),
+            'concurrency': config.get('concurrency', 25),
+            'export_directory': config.get('export_directory', DEFAULT_EXPORT_DIR),
+            'target_task': config.get('target_task'),
+            'skip_profiles': config.get('skip_profiles', False),
+        }
+    return {
+        'token': token, 'enterprise_key': enterprise_key,
+        'edition': edition or 'enterprise',
+        'url': url or 'https://sonarcloud.io/',
+        'run_id': run_id,
+        'concurrency': concurrency or 25,
+        'export_directory': export_directory or DEFAULT_EXPORT_DIR,
+        'target_task': target_task,
+        'skip_profiles': skip_profiles,
+    }
+
+
 @cli.command()
 @click.argument('token', required=False)
 @click.argument('enterprise_key', required=False)
@@ -234,44 +273,16 @@ def migrate(token, edition, url, enterprise_key, concurrency, run_id, export_dir
     You can also use --config to specify a JSON configuration file instead of command-line arguments.
     """
     # Load config file if provided
-    if config_file:
-        try:
-            config = load_config_file(config_file)
-            # Merge CLI args with config file (CLI takes precedence)
-            cli_args = {
-                'token': token,
-                'enterprise_key': enterprise_key,
-                'edition': edition,
-                'url': url,
-                'run_id': run_id,
-                'concurrency': concurrency,
-                'export_directory': export_directory,
-                'target_task': target_task,
-                'skip_profiles': skip_profiles if skip_profiles else None,
-            }
-            config = merge_config_with_cli(config, cli_args)
-            token = config.get('token')
-            enterprise_key = config.get('enterprise_key')
-            edition = config.get('edition', 'enterprise')
-            url = config.get('url', 'https://sonarcloud.io/')
-            run_id = config.get('run_id')
-            concurrency = config.get('concurrency', 25)
-            export_directory = config.get('export_directory', '/app/files/')
-            target_task = config.get('target_task')
-            skip_profiles = config.get('skip_profiles', False)
-        except (FileNotFoundError, ValueError) as e:
-            click.echo(f"Error loading config file: {e}")
-            return
-    else:
-        # Set defaults if not using config file
-        if edition is None:
-            edition = 'enterprise'
-        if url is None:
-            url = 'https://sonarcloud.io/'
-        if concurrency is None:
-            concurrency = 25
-        if export_directory is None:
-            export_directory = '/app/files/'
+    try:
+        p = _build_migrate_params(config_file, token, enterprise_key, edition, url, run_id,
+                                   concurrency, export_directory, target_task, skip_profiles)
+    except (FileNotFoundError, ValueError) as e:
+        click.echo(f"Error loading config file: {e}")
+        return
+    token, enterprise_key = p['token'], p['enterprise_key']
+    edition, url, run_id = p['edition'], p['url'], p['run_id']
+    concurrency, export_directory = p['concurrency'], p['export_directory']
+    target_task, skip_profiles = p['target_task'], p['skip_profiles']
     export_directory = os.path.realpath(export_directory)
 
     # Validate required arguments
@@ -460,7 +471,7 @@ def full_migrate(config_file):
     """
     try:
         config = load_config_file(config_file)
-    except (FileNotFoundError, json.JSONDecodeError, ValueError) as e:
+    except (FileNotFoundError, ValueError) as e:
         click.echo(f"Error loading config file: {e}")
         return
 

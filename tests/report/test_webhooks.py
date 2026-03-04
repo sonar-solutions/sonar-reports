@@ -27,7 +27,7 @@ class TestProcessWebhook:
         for name in ['hook-a', 'hook-b']:
             process_webhook(
                 webhooks=webhooks,
-                webhook={'name': name, 'url': 'http://x.com', 'projectKey': None, 'hasSecret': False},
+                webhook={'name': name, 'url': 'https://x.com', 'projectKey': None, 'hasSecret': False},
                 server_id='srv1',
             )
         assert len(webhooks['srv1']) == 2

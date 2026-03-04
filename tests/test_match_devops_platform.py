@@ -5,13 +5,13 @@ from operations.match_devops_platform import execute, process_chunk
 
 
 class TestExecute:
-    BASE_KWARGS = dict(
-        output_key='result',
-        integration_key='int-key',
-        repo_slug='my-repo',
-        slug='my-slug',
-        label='workspace / my-repo',
-    )
+    BASE_KWARGS = {
+        'output_key': 'result',
+        'integration_key': 'int-key',
+        'repo_slug': 'my-repo',
+        'slug': 'my-slug',
+        'label': 'workspace / my-repo',
+    }
 
     def test_bitbucketcloud_matches_when_repository_equals_label(self):
         result = execute(

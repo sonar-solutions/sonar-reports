@@ -95,5 +95,5 @@ class TestValidateMigration:
                 organizations=[{'sonarqube_org_key': 'sq-org', 'sonarcloud_org_key': ''}],
                 projects=[{'sonarqube_org_key': 'sq-org', 'sonarcloud_org_key': ''}],
             )
-            run_dir, completed = validate_migration(directory=tmpdir, run_id='run-01')
+            _, completed = validate_migration(directory=tmpdir, run_id='run-01')
             assert 'generateProjectMappings' in completed
