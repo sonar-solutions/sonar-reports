@@ -53,6 +53,25 @@ A CLI tool for migrating SonarQube Server configurations to SonarQube Cloud. Ext
 
 ---
 
+## What Gets Migrated
+
+| Category | Status | Notes |
+|----------|--------|-------|
+| Projects | ✅ Migrated | Created and linked to repositories |
+| Quality Profiles | ✅ Migrated | Restored from backup, inheritance set, defaults configured |
+| Quality Gates | ✅ Migrated | Gates with conditions and default assignments |
+| Groups & Permissions | ✅ Migrated | User groups, organization permissions, permission templates |
+| Portfolios | ✅ Migrated | Created with project assignments |
+| Historical analysis data | ⚠️ Not Migrated | Previous scan history does not transfer |
+| Issue history | ⚠️ Not Migrated | Existing issues and comments stay on Server |
+| Code coverage history | ⚠️ Not Migrated | Coverage trends reset after re-scan |
+| Security hotspot history | ⚠️ Not Migrated | Hotspot review states do not transfer |
+| Source code | ⚠️ Not Migrated | Pulled from your repositories directly |
+
+> **Note**: After migration, re-scan your projects in SonarQube Cloud to populate analysis data.
+
+---
+
 ## Getting Started
 
 Choose your approach:
@@ -62,6 +81,8 @@ Choose your approach:
 ---
 
 ## Interactive Wizard (Recommended)
+
+> **Recommended for most users. No scripting required.**
 
 For a guided migration experience, use the interactive wizard command. The wizard walks you through each phase, prompting for credentials and providing progress feedback.
 
@@ -126,7 +147,9 @@ Phase 2 of 7: Structure
 
 ## Manual CLI Method
 
-Most users should use the wizard. For scripting or automation, use the manual commands below.
+> For scripting, automation, or advanced users who need direct control over each phase.
+
+> Most users should use the [Interactive Wizard](#interactive-wizard-recommended) instead.
 
 ### Step 1: Create a working directory
 
@@ -466,6 +489,20 @@ docker run -v ./files:/app/files ghcr.io/sonar-solutions/sonar-reports:latest \
 | `--edition` | SonarQube Cloud license edition | `enterprise` |
 | `--concurrency` | Maximum concurrent API requests | `25` |
 | `--export_directory` | Directory for interim files | `/app/files/` |
+
+---
+
+## Post-Migration Steps
+
+After the migration completes, verify your SonarQube Cloud environment and prepare for re-analysis:
+
+1. **Verify projects** — Log in to SonarQube Cloud and confirm all expected projects appear and are linked to their repositories.
+
+2. **Verify Quality Gates and Profiles** — Check that quality gates have the correct conditions and quality profiles contain the expected rules and are set as defaults where needed.
+
+3. **Re-scan your projects** — Historical analysis data does not transfer. Trigger a new scan for each project (via CI/CD or manually) to populate analysis results in SonarQube Cloud.
+
+4. **Configure DevOps integration** — If you ran the Pipelines phase, confirm that CI/CD secrets (`SONAR_TOKEN`, `SONAR_HOST_URL`) are set correctly in your DevOps platform and that pipelines are pointing to SonarQube Cloud.
 
 ---
 
