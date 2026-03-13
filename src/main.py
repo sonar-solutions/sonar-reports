@@ -17,6 +17,8 @@ from config import load_config_file, merge_config_with_cli
 from wizard import wizard as wizard_command
 
 REQUESTS_LOG = 'requests.log'
+HTTPS_PREFIX = 'https://'
+HTTPS_API_PREFIX = 'https://api.'
 DEFAULT_EXPORT_DIR = '/app/files/'
 
 
@@ -292,7 +294,7 @@ def migrate(token, edition, url, enterprise_key, concurrency, run_id, export_dir
 
     create_plan = False
     configure_client(url=url, cert=None, server_version="cloud", token=token)
-    api_url = url.replace('https://', 'https://api.')
+    api_url = url.replace(HTTPS_PREFIX, HTTPS_API_PREFIX)
     configure_client(url=api_url, cert=None, server_version="cloud", token=token)
     configs = get_available_task_configs(client_version='cloud', edition=edition)
     if run_id is None:
@@ -372,7 +374,7 @@ def reset(token, edition, url, enterprise_key, concurrency, export_directory):
     if not url.endswith('/'):
         url = f"{url}/"
     configure_client(url=url, cert=None, server_version="cloud", token=token)
-    api_url = url.replace('https://', 'https://api.')
+    api_url = url.replace(HTTPS_PREFIX, HTTPS_API_PREFIX)
     configure_client(url=api_url, cert=None, server_version="cloud", token=token)
     run_id = generate_run_id(export_directory)
     run_dir = os.path.join(export_directory, run_id)
@@ -527,15 +529,21 @@ def full_migrate(config_file):
                      concurrency=concurrency, timeout=timeout)
 
     configs = get_available_task_configs(client_version=server_version, edition=edition)
-    target_tasks = list([k for k in configs.keys() if k.startswith('get')])
+    target_tasks = [k for k in configs.keys() if k.startswith('get')]
     plan = generate_task_plan(target_tasks=target_tasks, task_configs=configs)
 
     with open(os.path.join(extract_directory, 'extract.json'), 'wt') as f:
-        json.dump(dict(plan=plan, version=server_version, edition=edition, url=sonarqube_url,
-                      target_tasks=target_tasks, available_configs=list(configs.keys()),
-                      run_id=extract_id), f)
+        json.dump({
+            'plan': plan,
+            'version': server_version,
+            'edition': edition,
+            'url': sonarqube_url,
+            'target_tasks': target_tasks,
+            'available_configs': list(configs.keys()),
+            'run_id': extract_id,
+        }, f)
 
-    execute_plan(execution_plan=plan, inputs=dict(url=sonarqube_url), concurrency=concurrency,
+    execute_plan(execution_plan=plan, inputs={'url': sonarqube_url}, concurrency=concurrency,
                  task_configs=configs, output_directory=export_dir_abs, current_run_id=extract_id,
                  run_ids={extract_id})
     click.echo("✓ Data extracted successfully\n")
@@ -570,15 +578,15 @@ def full_migrate(config_file):
     projects = load_csv(directory=export_dir_abs, filename='projects.csv')
     project_org_mapping = {p['server_url'] + p['key']: p['sonarqube_org_key'] for p in projects}
 
-    mapping = dict(
-        templates=map_templates(project_org_mapping=project_org_mapping, extract_mapping=extract_mapping,
-                               export_directory=export_dir_abs),
-        profiles=map_profiles(extract_mapping=extract_mapping, project_org_mapping=project_org_mapping,
-                             export_directory=export_dir_abs),
-        gates=map_gates(project_org_mapping=project_org_mapping, extract_mapping=extract_mapping,
-                       export_directory=export_dir_abs),
-        portfolios=map_portfolios(export_directory=export_dir_abs, extract_mapping=extract_mapping)
-    )
+    mapping = {
+        'templates': map_templates(project_org_mapping=project_org_mapping, extract_mapping=extract_mapping,
+                                   export_directory=export_dir_abs),
+        'profiles': map_profiles(extract_mapping=extract_mapping, project_org_mapping=project_org_mapping,
+                                 export_directory=export_dir_abs),
+        'gates': map_gates(project_org_mapping=project_org_mapping, extract_mapping=extract_mapping,
+                           export_directory=export_dir_abs),
+        'portfolios': map_portfolios(export_directory=export_dir_abs, extract_mapping=extract_mapping),
+    }
     mapping['groups'] = map_groups(project_org_mapping=project_org_mapping, profiles=mapping['profiles'],
                                    extract_mapping=extract_mapping, export_directory=export_dir_abs,
                                    templates=mapping['templates'])
@@ -595,13 +603,13 @@ def full_migrate(config_file):
     run_dir, completed = validate_migration(directory=export_dir_abs, run_id=run_id)
 
     configure_client(url=sonarcloud_url, cert=None, server_version="cloud", token=sonarcloud_token)
-    api_url = sonarcloud_url.replace('https://', 'https://api.')
+    api_url = sonarcloud_url.replace(HTTPS_PREFIX, HTTPS_API_PREFIX)
     configure_client(url=api_url, cert=None, server_version="cloud", token=sonarcloud_token)
 
     configure_logger(name='http_request', level='INFO', output_file=os.path.join(run_dir, REQUESTS_LOG), operation='migrate')
 
     configs = get_available_task_configs(client_version='cloud', edition='enterprise')
-    target_tasks = list([k for k in configs.keys() if not any([k.startswith(i) for i in ['get', 'delete', 'reset']])])
+    target_tasks = [k for k in configs.keys() if not any(k.startswith(i) for i in ['get', 'delete', 'reset'])]
     if skip_profiles:
         target_tasks = [t for t in target_tasks if 'Profile' not in t and 'profile' not in t]
     completed = completed.union(set(MIGRATION_TASKS))
@@ -609,12 +617,19 @@ def full_migrate(config_file):
     plan = generate_task_plan(target_tasks=target_tasks, task_configs=configs, completed=completed)
 
     with open(os.path.join(run_dir, 'plan.json'), 'wt') as f:
-        json.dump(dict(plan=plan, version='cloud', edition='enterprise', completed=list(completed),
-                      url=sonarcloud_url, target_tasks=target_tasks,
-                      available_configs=list(configs.keys()), run_id=run_id), f)
+        json.dump({
+            'plan': plan,
+            'version': 'cloud',
+            'edition': 'enterprise',
+            'completed': list(completed),
+            'url': sonarcloud_url,
+            'target_tasks': target_tasks,
+            'available_configs': list(configs.keys()),
+            'run_id': run_id,
+        }, f)
 
-    execute_plan(execution_plan=plan, inputs=dict(url=sonarcloud_url, api_url=api_url,
-                 enterprise_key=sonarcloud_enterprise_key), concurrency=concurrency,
+    execute_plan(execution_plan=plan, inputs={'url': sonarcloud_url, 'api_url': api_url,
+                 'enterprise_key': sonarcloud_enterprise_key}, concurrency=concurrency,
                  task_configs=configs, output_directory=export_dir_abs, current_run_id=run_id,
                  run_ids=set(extract_mapping.values()).union({run_id}))
 
